@@ -1,0 +1,194 @@
+\section{Background and Motivation}
+\label{sec:background}
+
+% \begin{figure}[t]  % Use figure* for spanning across both columns
+%     \centering
+%     % First image (a)
+%     \hfill
+%     % \hfill
+%     \begin{minipage}[b]{0.35\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf-pre-ycsb-latest.png}
+%         \subcaption{CDF of Netdata’s Monitoring Latency Increase Under Load}
+%         \label{fig:pre-cdf}
+%     \end{minipage}
+%     \hfill
+%     % Second image (b)
+%     \begin{minipage}[b]{0.35\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/memcached-throughput.png}
+%         \subcaption{Throughput Degradation of Memcached Caused by Netdata}
+%         \label{fig:pre-throughput}
+%     \end{minipage}
+%     \hfill
+%     \hfill
+%     \caption{Monitoring Latency and Overhead in Netdata}
+%     \label{fig:pre-experiment}
+% \end{figure}
+\begin{figure}[t]
+    \centering
+    % First image (a)
+    \begin{minipage}[b]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{graph/cdf-pre-ycsb-latest.png}
+        \subcaption{CDF of Monitoring Latency.}
+        \label{fig:pre-cdf}
+    \end{minipage}%
+    \hspace{0.02\linewidth}  % Small space between images
+    % Second image (b)
+    \begin{minipage}[b]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{graph/memcached-throughput.png}
+        \subcaption{Memcached Throughput.}
+        \label{fig:pre-throughput}
+    \end{minipage}
+    \caption{Monitoring latency of Netdata and throughput of Memcached under low and high loads.}
+    \label{fig:pre-experiment}
+\end{figure}
+
+
+%  \begin{figure*}[t]
+%     \centering
+%     \includegraphics[width=0.90\textwidth]{SoCC-2025/figures/illustration/monitoring-overview.pdf}
+%     \caption{Monitoring system overview. (a) In traditional monitoring systems, the metrics collector runs in user space, incurring scheduling delays and frequent context switches due to system calls. (b) In {\sysname}, the metrics collector runs in-kernel, avoiding such overhead.}
+%     \label{fig:monitoring-overview}
+% \end{figure*}
+
+% TODO: qos-microservice に，あるマイクロサービスの遅延が他のマイクロサービスに伝播していく，という話が書いてあるのでした方が良いか．
+% 一つ一つのマイクロサービスのメンテナンスが重要という話につながる．
+
+
+\subsection{Traditional Monitoring System}
+\label{subsec:traditional-monitoring}
+
+We begin by introducing traditional monitoring techniques and highlighting their limitations.
+Conventional monitoring tools, such as Netdata~\cite{netdata} and Prometheus~\cite{prometheus}, are widely adopted in cloud environments due to their flexible metric collection capabilities.
+By allowing users to select and collect metrics tailored to the characteristics and goals of each microservice, these tools enable fine-grained observability, which is a key advantage in modern cloud-native systems.
+
+In these systems, the metrics collector typically runs as a user-space process and collects both user and kernel metrics (Fig.~\ref{fig:traditional-monitoring}).
+For kernel metrics, the collector issues system calls to access \texttt{procfs}~\cite{procfs}, a pseudo file system that exposes various kernel metrics stored in memory.
+For instance, by reading files such as \texttt{/proc/stat} and \texttt{/proc/meminfo}, one can obtain CPU and memory usage statistics.
+% For user metrics, the collector queries dedicated APIs exposed by each microservice, which are typically implemented for the purpose of monitoring.
+% Examples of user metrics include request rate, error rate, and response latency specific to each service.
+% For user metrics, such as request rate, error rate, and response latency, are collected by querying dedicated APIs exposed by each microservice for monitoring purposes.
+To collect user metrics, such as request rate, error rate, and response latency, the metrics collector queries APIs provided by each microservice.
+It sends a request for user metrics to the microservice---for example, the \texttt{stats} command in Memcached or the \texttt{INFO} command in Redis.
+Upon receiving the request, the microservice writes the metrics to the socket using the \texttt{write} system call, and the metrics collector retrieves them by reading from the socket using the \texttt{read} system call.
+
+However, this conventional design struggles to satisfy the low-latency and low-overhead requirements of modern monitoring workloads, primarily for the following reasons:
+
+\textbf{Monitoring delay due to resource contention. }  
+Since the metrics collector is scheduled as a user-space process, its execution is subject to CPU scheduling delays.
+In high-density cloud environments where CPU resources are tightly packed, collectors may face significant waiting time before being allocated CPU time.
+% Similarly, if the target microservice is not currently scheduled on a CPU, the monitoring API call may be delayed, increasing response latency.
+As illustrated in Fig.~\ref{fig:traditional-monitoring}, an incoming packet requesting the metrics goes through the network stack in the kernel and then is passed to the metrics collector running as a user process. This collector invokes some system calls to obtain kernel metrics through \texttt{procfs} or performs an inter-process communication (IPC) to get user metrics.
+The network stack used in traditional monitoring can cause unexpected latency due to internal lock contention.
+% While CPU binding~\cite{iron} can be used to reduce latency by pinning monitoring processes to specific cores, it may increase contention with co-located microservices and degrade overall performance.
+While CPU binding~\cite{iron} can be used to reduce latency by pinning monitoring processes to specific cores, it reduces the number of cores available to co-located microservices, which may degrade overall performance.
+
+\textbf{Monitoring overhead from frequent context switches. }  
+User-level monitoring involves multiple context switches between the user and kernel space.
+% (i) Switching from packet processing in the network stack to the user-space metrics collector triggers a context switch due to scheduling, (ii) system calls issued for kernel metric access, and (iii) system calls to retrieve user metrics---all introduce user/kernel context switches.
+As shown in Fig.~\ref{fig:traditional-monitoring}, (i) switching from packet processing in the network stack to the user-space metrics collector triggers a context switch, (ii) issuing system calls to access kernel metrics involves a context switch, and (iii) invoking system calls to retrieve user metrics also results in a context switch.
+% The number of system calls increases proportionally with the number of metrics and monitored microservices. %% deleted
+% Additionally, the TCP/IP stack itself incurs significant overhead, often becoming a primary bottleneck in end-to-end latency and throughput~\cite{stackmap}. % deleted
+
+
+%% memo: メトリクスサイズの説明をユーザがメトリクスを選択できるというにように組み込んだ説明
+% The metrics collector selects and returns the required metrics to the client based on user requests.
+The metrics collector selects the metrics, specified by the users, and returns them to the client.
+% To make the large volume of collected metrics from \texttt{procfs} and microservice API easier for clients to interpret, the collector organizes them into logical groups called charts.
+In the case of kernel metrics, Netdata sends approximately 280 bytes for CPU metrics, 180 bytes for memory metrics, and 900 bytes for disk metrics.
+For user metrics, the metrics size is approximately 650 bytes for Memcached, 2030 bytes for Redis, and 300 bytes for Nginx.
+Monitoring clients can selectively retrieve only the necessary metrics for their purposes. 
+% For example, if the client wishes to retrieve the chart \texttt{redis\_local.connections}, which includes multiple metrics related to Redis connection counts, it can specify \texttt{chart=redis\_local.connections} in the HTTP request to obtain the chart~\cite{netdata-redis}.
+
+Monitoring latency and overhead cause significant negative side effects on cloud-native services.
+Alibaba Cloud reports that online shopping services experienced unacceptable degradation of throughput and increased tail latency on ``double eleven'' shopping festival.
+Netdata was used to monitor a heavily loaded machine running Redis services with a 1s sampling interval.
+The monitor process interferes with Redis services, degrading the throughput by 6.25\% and increasing the tail latency by 2$\times$ periodically.
+
+% To confirm the negative side effects of user-level monitoring, we have conducted an experiment where Netdata is used as the monitoring tool and YCSB generates requests to a Memcached instance running on the same server.
+To confirm the negative side effects of user-level monitoring, we conducted an experiment.
+In this experiment, we used Netdata as the monitoring tool, and we employed YCSB to impose load on a Memcached instance by generating requests.
+As shown in Fig.~\ref{fig:pre-cdf}, while the monitoring latency remains low under light load, the $99^{\mathrm{th}}$ percentile latency increases sharply under heavy load.
+Fig.~\ref{fig:pre-throughput} shows that the presence of Netdata reduces YCSB throughput by 11.8\%.
+
+\subsection{Monitoring in Cloud-native Services}
+\label{subsec: cloud-monitoring}
+% To ensure compliance with service-level agreement (SLA) in cloud environments, monitoring plays an indispensable role. 
+% Effective monitoring involves the collection of both user metrics and kernel metrics to provide comprehensive insights into service performance and behavior.
+% User metrics, such as CPU utilization and memory occupation, offer critical information about resource usage and overall system health, enabling administrators to identify potential bottlenecks and optimize performance~\cite{monitoring-survey}.
+% Furthermore, cloud providers can improve resource utilization by analyzing the historical state of kernel metrics~\cite{resource-central, hcloud, scavenger}.
+% On the other hand, user metrics, such as request latency, throughput, and error rates, provide valuable insights into the behavior and efficiency of individual services.
+% These metrics allow for the detection of application-specific issues and support the maintenance of reliable and scalable operations in dynamic cloud environments.
+
+% Monitoring plays an indispensable role in cloud-native services to comply with service-level agreements (SLAs).
+% Monitoring services need to collect both kernel and user metrics to provide comprehensive insights into service performance and behavior.
+% Kernel metrics, such as CPU utilization and memory consumption, provide critical information about resource usage and overall system health, enabling administrators to identify potential bottlenecks and optimize performance~\cite{monitoring-survey}.
+% Furthermore, cloud providers can improve resource utilization by analyzing the historical state of kernel metrics~\cite{resource-central, hcloud, scavenger}.
+
+Monitoring plays an indispensable role in cloud-native services to comply with service-level agreements (SLAs).
+Monitoring services need to collect both kernel and user metrics to provide comprehensive insights into service performance and behavior.
+Kernel metrics, such as CPU utilization, memory pressure, and I/O wait time, provide concrete indicators of how system resources are being consumed.
+If sustained high CPU usage is observed across multiple cores, it may indicate contention among co-located containers. 
+% Similarly, if frequent memory swapping occurs, it can signal that the node is under memory pressure, which may require adjustments to container placement or resource limits.
+These observations help administrators detect performance bottlenecks, investigate abnormal behavior, and fine-tune resource allocation policies~\cite{monitoring-survey}.
+% Moreover, by analyzing historical trends in kernel metrics, cloud operators can improve resource utilization through actions such as consolidating underutilized containers onto fewer nodes, balancing workloads more evenly across the cluster, or adjusting resource quotas to better reflect actual usage patterns~\cite{resource-central, hcloud, scavenger}. 
+Moreover, cloud operators can improve resource utilization by analyzing historical trends in kernel metrics.
+Based on these insights, they may consolidate underutilized containers, balance workloads across the cluster, or adjust resource quotas to match actual usage patterns~\cite{resource-central, hcloud, scavenger}.
+% Moreover, cloud operators can improve resource utilization by analyzing historical trends in kernel metrics.
+% For example, they can consolidate underutilized containers onto fewer nodes.
+% They can also balance workloads more evenly across the cluster or adjust resource quotas to reflect actual usage patterns~\cite{resource-central, hcloud, scavenger}.
+User metrics, such as request latency, throughput, and error rates, offer essential insights into how individual services behave under real-world workloads.
+% These metrics are particularly valuable because they capture the internal state and operational quality of each microservice, which cannot be inferred solely from system-level observations.
+They are especially useful for capturing aspects of service performance that are not visible at the system level.
+% For instance, Redis exposes a metric called \texttt{redis.connections}, which counts client connection attempts.
+% Monitoring this metric enables alerts such as \texttt{redis\_connections\_rejected}, which signals when Redis rejects new connections due to reaching the \texttt{maxclients} limit.
+For example, Redis exposes \texttt{redis.connections}, which reveals connection load and helps detect rejections due to the \texttt{maxclients} limit, enabling timely configuration adjustments.
+% If such rejections are detected, operators can promptly identify capacity saturation, investigate client behavior, and adjust configuration parameters such as the maximum connection limit or connection pooling strategies.
+% By analyzing trends in these user metrics, cloud operators can detect early signs of service degradation, validate the effectiveness of configuration changes, and make informed decisions about autoscaling, request throttling, or architecture-level optimizations.
+
+In microservices architectures, monitoring is conducted for each individual microservice.
+This granular monitoring inherently incurs higher costs due to the increased number of components that need to be tracked.
+Furthermore, compared to monolithic monitoring, microservices require more frequent monitoring to capture the rapid changes and interactions between services that are characteristic of these architectures~\cite{microview}. 
+These characteristics of cloud-native services have introduced the need to address two new challenges in monitoring.
+
+\textbf{Monitoring messages must be collected in a timely fashion. }
+% Leading cloud-native services like Netflix~\cite{netflix} and Uber~\cite{uber} deploy hundreds or thousands of microservices, each requiring detailed and continuous monitoring to ensure system availability and performance.
+% These microservices exhibit highly dynamic behavior~\cite{unified-monitoring}, with key performance indicators such as request latency and error rate fluctuating over timescales as short as seconds or even milliseconds~\cite{zero}.
+% For example, AWS Lambda can launch up to 15,000 containers per second to handle production workloads, and this scale is expected to increase further~\cite{awscontainers}.
+% Such rapid elasticity means that even a brief delay in monitoring, such as a few hundred milliseconds, can result in missing transient performance anomalies.
+% These include sudden surges in request failures, latency spikes in user-facing services, or load imbalance across containers.
+% If undetected, such issues can quickly cascade, leading to SLA violations, degraded user experience, or service outages.
+% Therefore, to maintain SLA in such volatile environments, monitoring systems must capture and analyze metrics with millisecond-level granularity and minimal latency.
+To maintain SLA in cloud-native services, monitoring systems must capture and analyze metrics with minimal latency.
+Even a brief delay in monitoring, such as a few hundred milliseconds, can result in missing transient performance anomalies, including sudden surges in request failures, latency spikes in user-facing services, or load imbalance across containers.
+If these issues go undetected, they can cascade and lead to SLA violations, degraded user experience, or service outages~\cite{qos-microservices}.
+This requirement is especially critical in modern cloud platforms.
+For example, AWS Lambda can launch up to 15,000 containers per second to handle production workloads, and this scale is expected to increase further~\cite{awscontainers}.
+Microservices in large-scale platforms like Netflix~\cite{netflix} and Uber~\cite{uber} exhibit highly dynamic behavior~\cite{unified-monitoring}, with key performance indicators such as request latency and error rate fluctuating over timescales as short as seconds or even milliseconds~\cite{zero}.
+Each of these microservices requires detailed and continuous monitoring to ensure system availability and performance.
+
+
+
+\textbf{Monitoring must not interfere with cloud services. }
+To ensure the performance and availability of cloud-native services, it is critical that monitoring does not interfere with the operation of microservices.
+Modern deployments often colocate a large number of microservices on a single physical host to maximize resource utilization~\cite{resource-central}.
+In such high-density environments, even lightweight monitoring tasks can compete for scarce CPU and memory resources.
+This resource contention can lead to increased latency or missed deadlines in latency-sensitive services, which may violate the SLA.
+Therefore, minimizing the resource consumption of monitoring systems is essential to maintaining service quality.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.7\columnwidth]{fig/xdp-overview.pdf}
+    \caption{
+    XDP programs are loaded into the device driver layer after the eBPF verifier verifies their safety. 
+    When a packet arrives, the XDP program is executed by the eBPF virtual machine. 
+    Depending on the program’s logic, the packet can be: 
+    (1) forwarded to the network stack in the kernel (\texttt{XDP\_PASS}), 
+    (2) sent back immediately (\texttt{XDP\_TX}), or 
+    (3) dropped (\texttt{XDP\_DROP}).
+    }
+    \label{fig:overview-xdp}
+\end{figure}

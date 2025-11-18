@@ -1,0 +1,442 @@
+\section{Evaluation}
+\label{sec:evaluation}
+
+\begin{figure*}[!p]
+  \centering
+  \subfloat[1 instance (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance1-kernel.png}\label{fig:instance1-kernel}}\hfill
+  \subfloat[5 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance5-kernel.png}\label{fig:instance5-kernel}}\hfill
+  \subfloat[10 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-kernel.png}\label{fig:instance10-kernel}}\\[10pt]
+  % \subfloat[10 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-kernel.png}\label{fig:instance10-kernel}}\\
+  \subfloat[interval 1000 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval1000-kernel.png}\label{fig:interval1000-kernel}}\hfill
+  \subfloat[interval 100 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval100-kernel.png}\label{fig:interval100-kernel}}\hfill
+  \subfloat[interval 10 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval10-kernel.png}\label{fig:interval10-kernel}}
+  \caption{Monitoring latency of \textbf{kernel} metrics under varying numbers of Memcached instances and sampling intervals}
+  \label{fig:monitor-latency-kernel}
+\end{figure*}
+
+\begin{figure*}[!p]
+  \centering
+  \subfloat[1 instance (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance1-user.png}\label{fig:instance1-user}}\hfill
+  \subfloat[5 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance5-user.png}\label{fig:instance5-user}}\hfill
+  \subfloat[10 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-user.png}\label{fig:instance10-user}}\\[10pt]
+  % \subfloat[10 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-user.png}\label{fig:instance10-user}}\\
+  \subfloat[interval 1000 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval1000-user.png}\label{fig:interval1000-user}}\hfill
+  \subfloat[interval 100 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval100-user.png}\label{fig:interval100-user}}\hfill
+  \subfloat[interval 10 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval10-user.png}\label{fig:interval10-user}}
+  \caption{Monitoring latency of \textbf{user} metrics under varying numbers of Memcached instances and sampling intervals}
+  \label{fig:monitor-latency-user}
+\end{figure*}
+
+
+
+To evaluate {\sysname}, we conducted some experiments.
+Sec.~\ref{subsec:evaluation-setup} describes the experimental setup.
+We analyze how much it reduces monitoring latency in Sec.~\ref{subsec:monitoring-latency}.
+We then analyze how effectively {\sysname} mitigates monitoring overhead in Sec.~\ref{subsec:monitoring-overhead}.
+Finally, in Sec.~\ref{subsec:priority}, we investigate the monitoring latency and overhead when the traditional monitoring system is prioritized and compare the results with those of {\sysname}.
+
+\subsection{Evaluation Setup}
+\label{subsec:evaluation-setup}
+
+
+\begin{table}[t]
+\centering
+% \small
+\scriptsize
+\caption{Experimental Setup}
+\begin{tabular}{|l|p{3cm}|p{3cm}|}
+% \begin{tabular}{|l|l|l|}
+\hline
+       & \textbf{Monitoring Server} & \textbf{Monitoring Client} \\ \hline
+OS     & Ubuntu 24.04 (Linux kernel v6.8) & Ubuntu 22.04 (Linux kernel v5.15) \\ \hline
+CPU    & Intel(R) Xeon(R) Gold 5418Y @ 2.00GHz (48 cores, 2 sockets) & Intel(R) Xeon(R) E-2276G @ 3.80GHz (6 cores, 1 socket) \\ \hline
+NIC    & Intel Ethernet Controller X710 for 10GbE SFP+ & Intel Ethernet Controller X710 for 10GbE SFP+ \\ \hline
+DRAM   & 256 GB DDR5-4400 & 32 GB DDR4-2666 \\ \hline
+\end{tabular}
+\label{tab:system-config}
+\end{table}
+
+We use Netdata\cite{netdata}, as a comparison system.
+Netdata is widely used by cloud providers such as AWS and Microsoft Azure~\cite{netdata}.
+The monitoring process of Netdata is executed in user space.
+% We use YCSB~\cite{ycsb} as a benchmark to perform update and insert operations on a Memcached server~\cite{memcached}.
+% In this experiment, we configure YCSB with a Zipfian request distribution, which generates requests that follow a skewed access pattern commonly seen in real-world workloads.
+% The database is initialized with a single record (recordcount=1), consisting of one field (fieldcount=1) of 100,000 bytes in length (fieldlength=100000).
+We use YCSB~\cite{ycsb} as a benchmark to perform update and insert operations on a Memcached server~\cite{memcached}.
+In this experiment, YCSB is configured to generate requests following a Zipfian distribution.
+The monitoring server and the monitoring client are directly connected without a switch.
+% The Memcached server, the monitoring system, and the YCSB benchmark all run on the same physical server.
+% To minimize interference, we isolate their CPU cores and NUMA nodes.
+% Specifically, both Memcached and Netdata are pinned to core 0 of NUMA node 0.
+% YCSB is configured to launch as many threads as the number of cores in NUMA node 1.
+The experimental environment is shown in Tab.~\ref{tab:system-config}.
+
+As discussed in Sec.~\ref{subsec: cloud-monitoring}, cloud service monitoring requires low latency and minimal interference with the host services.
+To confirm {\sysname} meets these requirements, we evaluate it from the following aspects.
+\begin{itemize}
+    \item \textit{Monitoring Latency}: 
+    Monitoring latency is the duration between when the monitoring client sends a packet to the monitored server and when it receives a reply from that server.
+    % \item \textit{CPU Utilization}: 
+    % CPU utilization represents the percentage of CPU resources consumed by the monitoring system. 
+    % We measure these metrics using \texttt{pidstat}~\cite{pidstat} for Netdata, which tracks process-level CPU usage. 
+    % For {\sysname}, CPU utilization is measured based on \texttt{RDTSC}~\cite{rdtsc}, enabling fine-grained cycle-level accounting.
+    % These metrics are used to evaluate the computational overhead introduced by each monitoring approach.
+    \item \textit{CPU Utilization}: 
+    To evaluate the computational overhead introduced by each monitoring approach, we measure CPU utilization, which represents the percentage of CPU resources consumed by the monitoring system. 
+    We use \texttt{pidstat}~\cite{pidstat} to measure process-level CPU usage for Netdata. 
+    For {\sysname}, CPU utilization is measured based on \texttt{RDTSC}~\cite{rdtsc}, enabling fine-grained cycle-level accounting.
+    % \item \textit{Memcached Throughput}: 
+    % Memcached throughput is the number of operations per second.
+    % The Memcached throughput reflects the performance of the host's services. 
+    % Therefore, it is used to evaluate how much monitoring interferes with the host's performance.
+    \item \textit{Memcached Throughput}:  
+    To evaluate how much monitoring interferes with the host's performance, we measure Memcached throughput, defined as the number of operations per second.  
+    Memcached throughput reflects the performance of the host's services and is used as an indicator of the impact caused by monitoring.
+\end{itemize}
+
+We evaluate the impact of the following two parameters on monitoring performance to investigate whether real-time metrics can be collected under high-load conditions.
+\begin{itemize}
+    \item \textit{Number of Memcached Instances}: As mentioned in Sec.~\ref{sec:background}, many applications are deployed in distributed systems. 
+    We evaluate how monitoring performance changes as the number of Memcached instances increases and the load intensifies.
+    The number of instances varies from 1 to 10.
+    \item \textit{Sampling Interval}: The required sampling interval is determined by the updating frequency of metrics.
+    The default interval is 1000 ms in Netdata and it is configurable.
+    We evaluate monitoring performance with 10 - 1000\textit{ms} sampling intervals.
+\end{itemize}
+
+
+\subsection{Monitoring Latency}
+\label{subsec:monitoring-latency}
+
+% \begin{table}[t]
+%     \centering
+%     % \caption{Latency statistics for different monitoring intervals (unit: ms)}
+%     \caption{Latency statistics for monitoring 10 Memcached instances at different intervals (unit: ms)}
+%     \label{tab:latency-stats}
+%     \small
+%     \begin{tabular}{lccc}
+%         \toprule
+%          & 1000 ms & 100 ms & 10 ms \\
+%         \midrule
+%         Mean latency        & 1.040 & 1.192 & 1.058 \\
+%         50th percentile     & 1.050 & 0.974 & 0.839 \\
+%         90th percentile     & 1.505 & 1.553 & 1.444 \\
+%         99th percentile     & 1.611 & 5.182 & 5.776 \\
+%         Minimum latency     & 0.592 & 0.551 & 0.399 \\
+%         Maximum latency     & 1.641 & 10.790 & 9.554 \\
+%         Standard deviation  & 0.320 & 0.943 & 0.942 \\
+%         \bottomrule
+%     \end{tabular}
+% \end{table}
+
+% \begin{table}[htbp]
+%     \centering
+%     \caption{Latency statistics for monitoring Memcached with different instance counts (interval = 10 ms, unit: ms)}
+%     \label{tab:latency-10ms}
+%     \small
+%     \begin{tabular}{lccc}
+%         \toprule
+%                       & 1 instance & 5 instances & 10 instances \\
+%         \midrule
+%         Mean latency        & 0.993 & 0.988 & 1.058 \\
+%         50th percentile     & 0.786 & 0.809 & 0.839 \\
+%         90th percentile     & 1.392 & 1.385 & 1.444 \\
+%         99th percentile     & 5.405 & 4.946 & 5.776 \\
+%         Minimum latency     & 0.398 & 0.396 & 0.399 \\
+%         Maximum latency     & 10.625 & 10.656 & 9.554 \\
+%         Standard deviation  & 0.890 & 0.811 & 0.942 \\
+%         \bottomrule
+%     \end{tabular}
+% \end{table}
+
+
+% \begin{table*}[htbp]
+%     \centering
+%     \caption{Latency statistics for monitoring user metrics under different sampling intervals (unit: ms)}
+%     \label{tab:latency-user-metrics}
+%     \small
+%     \begin{tabular}{lccc|ccc}
+%         \toprule
+%          & \multicolumn{3}{c}{{\sysname}} & \multicolumn{3}{c}{Netdata} \\
+%         \cmidrule(lr){2-4} \cmidrule(lr){5-7}
+%         & 1000 ms & 100 ms & 10 ms & 1000 ms & 100 ms & 10 ms \\
+%         \midrule
+%         Mean latency        & $5.96\times 10^{-2}$ & $5.5\times 10^{-2}$ & $5.1\times 10^{-2}$ & $1.0$   & $1.2$   & $1.1$   \\
+%         % 50th percentile     & $5.9\times 10^{-2}$  & $5.4\times 10^{-2}$ & $5.0\times 10^{-2}$ & $1.1$   & $9.7\times 10^{-1}$ & $8.4\times 10^{-1}$ \\
+%         % 90th percentile     & $6.2\times 10^{-2}$  & $5.9\times 10^{-2}$ & $5.2\times 10^{-2}$ & $1.5$   & $1.6$   & $1.4$   \\
+%         99th percentile     & $6.4\times 10^{-2}$  & $6.6\times 10^{-2}$ & $5.4\times 10^{-2}$ & $1.6$   & $5.2$   & $5.8$   \\
+%         Minimum latency     & $5.0\times 10^{-2}$  & $4.4\times 10^{-2}$ & $4.1\times 10^{-2}$ & $5.9\times 10^{-1}$ & $5.5\times 10^{-1}$ & $4.0\times 10^{-1}$ \\
+%         Maximum latency     & $6.5\times 10^{-2}$  & $6.9\times 10^{-2}$ & $5.9\times 10^{-2}$ & $1.6$   & $1.1\times 10^{1}$ & $9.6$   \\
+%         Standard deviation  & $2.2\times 10^{-3}$  & $3.4\times 10^{-3}$ & $1.5\times 10^{-3}$ & $3.2\times 10^{-1}$ & $9.4\times 10^{-1}$ & $9.4\times 10^{-1}$ \\
+%         \bottomrule
+%     \end{tabular}
+% \end{table*}
+
+% \begin{table*}[htbp]
+%     \centering
+%     \caption{Latency statistics for monitoring user metrics under different sampling interlals (unit: $\mu$s)}
+%     \label{tab:latency-table}
+%     \small
+%     \begin{tabular}{lccc|ccc}
+%         \toprule
+%          & \multicolumn{3}{c}{{\sysname}} & \multicolumn{3}{c}{Netdata} \\
+%         \cmidrule(lr){2-4} \cmidrule(lr){5-7}
+%         & 1000 ms & 100 ms & 10 ms & 1000 ms & 100 ms & 10 ms \\
+%         \midrule
+%         Mean latency        & 59.6 & 54.8 & 50.5 & 1040 & 1190 & 1060 \\
+%         % 50th percentile     & 59.4 & 54.0 & 50.4 & 1050 & 974  & 839 \\
+%         % 90th percentile     & 62.0 & 59.2 & 52.3 & 1505 & 1553 & 1444 \\
+%         99th percentile     & 64.4 & 66.4 & 54.3 & 1611 & 5182 & 5776 \\
+%         Minimum latency     & 50.3 & 43.8 & 40.8 & 592  & 551  & 399 \\
+%         Maximum latency     & 64.6 & 69.0 & 58.6 & 1641 & 10790 & 9554 \\
+%         Standard deviation  & 2.17 & 3.41 & 1.45 & 320  & 943  & 942 \\
+%         \bottomrule
+%     \end{tabular}
+% \end{table*}
+
+We evaluate the latency of {\sysname} in monitoring metrics of kernel and user while performing update and insert operations on the Memcached server using YCSB. 
+We monitored CPU utilization as kernel metrics and Memcached metrics as user metrics.
+
+
+% Tab.~\ref{tab:monitoring-latency} summarizes the monitoring latency of Netdata and {\sysname}.
+% {\sysname} reduces the maximum latency by two orders of magnitude compared with Netdata.
+% High load causes a delay in monitoring messages, with the maximum latency increasing rapidly in Netdata.
+% Not only does {\sysname} significantly reduce the maximum latency, but it also achieves a minimum latency that is one order of magnitude lower than that of Netdata.
+% This difference arises because Netdata collects and communicates metrics using the HTTP protocol, whereas {\sysname} operates at the NIC driver layer.
+% As a result, the baseline latency of {\sysname} is inherently lower.
+
+% Fig.~\ref{fig:monitor-latency-kernel} and Fig.~\ref{fig:monitor-latency-user} show the CDFs of monitoring latency for kernel and user metrics, respectively, across different numbers of Memcached instances and sampling intervals.
+
+\textbf{Monitoring Latency for Kernel Metrics.}
+Fig.~\ref{fig:instance1-kernel}, Fig.~\ref{fig:instance5-kernel}, and Fig.~\ref{fig:instance10-kernel} illustrate the monitoring latency of {\sysname} and Netdata with varying sampling intervals under fixed numbers of Memcached instances.
+Fig.~\ref{fig:instance1-kernel} shows the case where the number of instances is fixed at one. Across all sampling intervals (1000~ms, 100~ms, and 10~ms), {\sysname} consistently achieves lower latency, with the 99th percentile latency being 81.64~$\mu\text{s}$, 74.0~$\mu\text{s}$, and 70.3~$\mu\text{s}$, respectively. In contrast, Netdata exhibits significantly higher latency, with 99th percentile values of 3.17~ms, 4.83~ms, and 5.41~ms for the same intervals.
+Fig.~\ref{fig:instance5-kernel} presents the results for five instances. Again, {\sysname} maintains low latency across all intervals. While Netdata does not show a sharp increase in tail latency at 1000~ms (99th percentile: 1.63~ms), the tail latency becomes substantially larger at 100~ms and 10~ms (99th percentile: 5.01~ms and 4.96~ms, respectively).
+Similar trends are observed in Fig.~\ref{fig:instance10-kernel}, where the number of instances is fixed at ten. {\sysname} keeps the latency low for all sampling intervals (99th percentile: 75.2~$\mu\text{s}$, 71.3~$\mu\text{s}$, and 70.1~$\mu\text{s}$), while Netdata again suffers from increased tail latency, particularly at 100~ms and 10~ms intervals (99th percentile: 5.18~ms and 5.77~ms, respectively).
+These results indicate that {\sysname} enables consistently low-latency monitoring for Memcached servers with varying numbers of instances, reducing tail latency by approximately two orders of magnitude compared to Netdata.
+
+Fig.~\ref{fig:interval1000-kernel}, Fig.~\ref{fig:interval100-kernel}, and Fig.~\ref{fig:interval10-kernel} show the monitoring latency of kernel metrics when the sampling interval is fixed and the number of Memcached instances is varied.
+In Fig.~\ref{fig:interval1000-kernel}, with the sampling interval fixed at 1000~ms, {\sysname} shows consistently low latency across all instance counts ($\le 81.1~\mu\text{s}$). Netdata, on the other hand, exhibits a sharp increase in tail latency when the number of instances is one. Although the increase is less pronounced for five and ten instances, Netdata's latency remains higher than that of {\sysname}.
+Fig.~\ref{fig:interval100-kernel} shows results with a 100~ms interval. {\sysname} again maintains low latency across all instance counts ($\le 74.0~\mu\text{s}$), while Netdata shows significantly higher latency and larger tail values.
+In Fig.~\ref{fig:interval10-kernel}, the sampling interval is fixed at 10~ms. {\sysname} continues to provide low monitoring latency ($\le 71.2~\mu\text{s}$) regardless of the number of instances, whereas Netdata suffers from high tail latency.
+These results confirm that {\sysname} achieves low-latency monitoring across various sampling intervals, significantly reducing tail latency by up to two orders of magnitude compared to Netdata.
+In all cases, the monitoring latency was shorter than the sampling interval.
+
+\textbf{Monitoring Latency for User Metrics.} 
+To retrieve user metrics, {\sysname} is required to access metrics in user space from the kernel via XDP\@. 
+% To achieve low-latency monitoring in this setting, {\sysname} is designed to access user metrics through shared memory, enabling monitoring performance comparable to that of kernel metric collection.
+{\sysname} uses shared memory to access user metrics to avoid context switches involved in invoking user-level APIs.  
+% We now evaluate whether this approach indeed achieves low-latency monitoring comparable to that for kernel metrics.
+Here we demonstrate that approach achieves low-latency in monitoring.
+
+Fig.~\ref{fig:instance1-user}, Fig.~\ref{fig:instance5-user}, and Fig.~\ref{fig:instance10-user} show the monitoring latency with a fixed number of Memcached instances under varying sampling intervals.
+Fig.~\ref{fig:instance1-user} illustrates the case with one instance, where the sampling interval is varied.
+Across all sampling intervals, {\sysname} consistently achieves low-latency monitoring.
+The monitoring latencies for sampling intervals of 1000, 100, and 10~ms were 152~$\mu$s, 145~$\mu$s, and 130~$\mu$s, respectively.
+Although this is approximately twice the latency observed in kernel monitoring under the same conditions, the latency remains low (81.6~$\mu$s, 74.0~$\mu$s, and 70.3~$\mu$s, respectively, for kernel metrics).
+In contrast, Netdata exhibits significantly higher tail latency, with monitoring latencies of 4.23~ms, 5.54~ms, and 5.07~ms for the same sampling intervals.
+Even when the number of instances is fixed at five (Fig.~\ref{fig:instance5-user}), {\sysname} maintains low monitoring latency ($\le$197~$\mu$s).
+On the other hand, Netdata shows much higher latency.
+This reflects a trend where shorter sampling intervals exacerbate Netdata's tail latency.
+Specifically, the 99.9th percentile latencies for sampling intervals of 1000, 100, and 10~ms were 3.11~ms, 5.29~ms, and 5.73~ms, respectively.
+Similar behavior is observed when the number of instances is increased to ten (Fig.~\ref{fig:instance10-user}).
+{\sysname} consistently maintains low monitoring latency across all sampling intervals, while Netdata continues to exhibit high latency.
+These results demonstrate that {\sysname} can achieve low-latency monitoring of user metrics regardless of the number of instances.
+
+Fig.~\ref{fig:interval1000-user}, Fig.~\ref{fig:interval100-user}, and Fig.~\ref{fig:interval10-user} show monitoring latency with fixed sampling intervals while varying the number of instances.
+As shown in Fig.~\ref{fig:interval1000-user}, {\sysname} achieves low latency across all instance counts ($\le$197~$\mu$s), whereas Netdata shows significantly higher latency ($\le$5.23~ms).
+The same trend is observed when the interval is fixed at 100~ms (Fig.~\ref{fig:interval100-user}), where {\sysname} maintains latency $\le$187~$\mu$s, while Netdata reaches up to $\le$7.8~ms.
+Even in the 10~ms interval case (Fig.~\ref{fig:interval10-user}), {\sysname} maintains low latency ($\le$173~$\mu$s) regardless of the instance count, whereas Netdata exhibits increased latency.
+These results confirm that {\sysname} provides low-latency monitoring for user metrics under all sampling intervals and instance counts.
+In all cases, similar to kernel metric monitoring, the monitoring latency remains shorter than the sampling interval, indicating that the monitoring process can be completed within each interval.
+
+
+\subsection{Monitoring Interference}
+\label{subsec:monitoring-overhead}
+
+We evaluate the monitoring overhead based on two factors: the CPU utilization required for monitoring and the reduction in Memcached throughput on the host during monitoring.
+
+\begin{table}[ht]
+\centering
+% \small 
+\caption{CPU Utilization vs Memcached instances (Monitoring Memcached Metrics, Interval is 10 ms)}
+\begin{tabular}{|l|l|l|l|}
+\hline
+     & 1 instance & 5 instances  &  10 instances \\ \hline
+ Netdata (plugin)   & 4.8 \% (0.12 \%)  & 4.9 \% (0.18 \%)  & 5.2 \% (0.24 \%) \\ \hline
+ % Netdata plugin   & 0.12 \%  & 0.18 \%  & 0.24 \%  \\ \hline
+ {\sysname}  & $4.7 \times 10^{-3}$ \% &  $1.7 \times 10^{-2}$ \%  & $4.7 \times 10^{-2}$ \% \\ \hline
+\end{tabular}
+\label{tab:cpu-util-instance}
+\end{table}
+
+\begin{table}[ht]
+\centering
+% \small 
+\caption{CPU Utilization vs Memcached interval (Monitoring Memcached Metrics, 10 instances)}
+\begin{tabular}{|l|l|l|l|}
+\hline
+     & 1000 ms & 100 ms  &  10 ms \\ \hline
+ Netdata (plugin)   & 1.1 \% (0.28 \%) & 1.8 \% (0.28 \%) & 5.2 \% (0.24 \%) \\ \hline
+ % Netdata plugin   & 0.28 \%  & 0.28 \%  & 0.24 \%  \\ \hline
+ {\sysname}  & $9.9 \times 10^{-4}$ \% &  $5.6 \times 10^{-3}$ \%  & $4.7 \times 10^{-2}$ \% \\ \hline
+\end{tabular}
+\label{tab:cpu-util-interval}
+\end{table}
+
+
+\begin{figure}[t]  % Use figure* for spanning across both columns
+    \centering
+    % First image (a)
+    \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as needed
+        \centering
+        \includegraphics[width=\textwidth]{graph/cpu-util-instance.png}
+        \subcaption{CPU utilization vs Instances}
+        \label{fig:cpu-util-instance}
+    \end{minipage}
+    \hfill
+    % Second image (b)
+    \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as needed
+        \centering
+        \includegraphics[width=\textwidth]{graph/cpu-util-interval.png}
+        \subcaption{CPU utilization vs Interval}
+        \label{fig:cpu-util-interval}
+    \end{minipage}
+    \hfill
+    % Overall caption
+    \caption{Monitoring CPU utilization.}
+    \label{fig:cpu-util}
+\end{figure}
+
+\textbf{CPU Utilization.}
+We measure the CPU utilization of the monitoring server while it handles requests for Memcached metrics sent from the monitoring client.
+These requests are issued to either Netdata or {\sysname}, and the server-side CPU usage incurred by each monitoring approach is recorded.
+% The Netdata plugin refers to \texttt{go.d.plugin}, a child process of Netdata responsible for collecting user metrics.
+Netdata has a child process called \texttt{go.d.plugin}, which is responsible for collecting user metrics.
+This plugin queries the application’s metrics API and returns the collected values to the main Netdata process.
+% The Netdata total CPU utilization represents the combined CPU usage of both the \texttt{go.d.plugin} and the main Netdata process.
+
+% % Overall, {\sysname} consistently incurs significantly lower CPU utilization compared to Netdata, typically by one to four orders of magnitude. 
+% As shown in Tables~\ref{tab:cpu-util-instance} and~\ref{tab:cpu-util-interval}, {\sysname} consistently incurs lower CPU utilization compared to Netdata—typically by one to four orders of magnitude.
+% This efficiency stems from the architectural differences between the two systems: Netdata incurs substantial overhead due to context switches and processing within the network stack, whereas {\sysname} eliminates these components and operates in a much more lightweight manner.
+
+Tab.~\ref{tab:cpu-util-instance} and Fig.~\ref{fig:cpu-util-instance} show the relationship between CPU utilization and the number of Memcached instances.
+The Netdata CPU usage increases from 4.8\% to 5.2\%, corresponding to a 0.4 percentage point increase.
+In contrast, {\sysname}’s CPU usage increases from $4.7 \times 10^{-3}$\% to $4.7 \times 10^{-2}$\%, corresponding to a 0.0423 percentage point increase.
+While both systems show increasing CPU usage as the number of instances grows, {\sysname} maintains a lower usage level with a much smaller increase.
+The plugin shows a more noticeable rise in CPU usage due to the growing number of API requests it sends to each Memcached instance.
+Its CPU utilization increases from 0.12\% to 0.24\%.
+
+Tab.~\ref{tab:cpu-util-interval} and Fig.~\ref{fig:cpu-util-interval} illustrate the relationship between CPU utilization and the monitoring sampling interval.
+As the sampling interval decreases, the CPU usage increases for both Netdata and {\sysname}.
+However, even at a sampling interval of 10~ms, {\sysname} maintains a CPU utilization that is two orders of magnitude lower than Netdata.
+The CPU utilization of the plugin remains nearly constant, ranging from 0.24\% to 0.22\%.
+This is because \texttt{go.d.plugin} is configured to send API requests to the application at a minimum interval of 1000ms.
+Therefore, regardless of the sampling interval configured for Netdata, the plugin continues to collect metrics at a fixed 1000ms interval, resulting in negligible changes in its CPU usage.
+
+% Overall, this efficiency stems from the architectural differences between the two systems: Netdata incurs substantial overhead due to context switches and processing within the network stack, whereas {\sysname} eliminates these components and operates in a much more lightweight manner.
+
+
+\begin{figure}[t]  % Use figure* for spanning across both columns
+    \centering
+    % First image (a)
+    \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as need≤≤≤ed
+        \centering
+        \includegraphics[width=\textwidth]{graph/Memcached-throughput-k-met.png}
+        \subcaption{Memcached throughput while monitoring kernel metrics}
+        \label{fig:throughput-k-met}
+    \end{minipage}
+    \hfill
+    % Second image (b)
+    \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as needed
+        \centering
+        \includegraphics[width=\textwidth]{graph/Memcached-throughput-u-met.png}
+        \subcaption{Memcached throughput while monitoring user metrics}
+        \label{fig:throughput-u-met}
+    \end{minipage}
+    \hfill
+    % Overall caption
+    \caption{Memcached throughput}
+    \label{fig:memcached-throughput}
+\end{figure}
+
+\begin{figure*}[t]
+  \centering
+
+  % First image (a)
+  \begin{minipage}[t]{0.35\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{graph/cdf-user-pri.png}
+    \subcaption{CDF of User Monitoring Latency}
+    \label{fig:cdf-u-met-pri}
+  \end{minipage}
+  \hspace{0.01\textwidth}
+  % Second image (b)
+  \begin{minipage}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{graph/elapsed-latency-nonpri.png}
+    \subcaption{Monitoring Latency of Non-Prioritized Netdata}
+    \label{fig:elapsed-latency-nonpri}
+  \end{minipage}
+  \hspace{0.01\textwidth}
+  % Third image (c)
+  \begin{minipage}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{graph/elapsed-latency-pri.png}
+    \subcaption{Monitoring Latency of Prioritized Netdata}
+    \label{fig:elapsed-latency-pri}
+  \end{minipage}
+
+  \caption{Monitoring latency comparison}
+  \label{fig:monitoring-latency-three}
+\end{figure*}
+
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.8\columnwidth]{graph/Memcached-throughput-u-met-pri.png}
+    \caption{Memcached Throughput while Monitoring User Metrics}
+    \label{fig:throughput-u-met-pri}
+\end{figure}
+
+\textbf{Impact of Monitoring on Host Service Performance. }
+To evaluate the extent to which monitoring interferes with the host’s services, we examine the throughput of Memcached during monitoring.
+Fig.~\ref{fig:throughput-k-met} and Fig.~\ref{fig:throughput-u-met} show the Memcached throughput on the host machine when monitoring kernel and user metrics, respectively.
+These figures illustrate how throughput changes as the monitoring sampling interval is varied.
+In both kernel and user monitoring, Netdata reduces Memcached throughput compared to the no-monitoring baseline.
+Moreover, the shorter the sampling interval, the more throughput degrades.
+At a 10 ms sampling interval, kernel monitoring with Netdata causes the Memcached throughput to drop by approximately 10.6\% (from 12.48 K ops/sec to 11.16 K ops/sec), and user monitoring results in an 11.8\% (from 12.48 K ops/sec to 11.01 K ops/sec) decrease.
+This performance degradation correlates with the increased CPU utilization of Netdata shown in Fig.~\ref{fig:cpu-util}, suggesting that CPU resource contention caused by Netdata interferes with the execution of host services.
+In contrast, {\sysname} maintains nearly the same Memcached throughput regardless of the sampling interval.
+As shown in Fig.~\ref{fig:cpu-util} and Fig.~\ref{fig:memcached-throughput}, {\sysname} is lightweight and introduces minimal interference, thereby preserving the performance of the Memcached service.
+
+
+\subsection{Comparison with Prioritized Netdata}
+\label{subsec:priority}
+
+We investigate the relationship between monitoring latency and Memcached throughput during user metrics monitoring when the priority of Netdata is increased.
+One might expect that simply raising the priority of Netdata would enable low-latency monitoring.
+However, we show that increasing the priority alone does not fully resolve the problem.
+In this experiment, we configure Netdata to run under the SCHED\_FIFO scheduling policy with a priority of 99.
+
+
+
+\textbf{Monitoring Latency. }
+% We show the monitoring latency when observing 10 Memcached instances with a 10 ms sampling interval in Fig.~\ref{fig:monitoring-latency-three}.
+We show the monitoring latency for 10 Memcached servers with a 10ms sampling interval in Fig.\ref{fig:monitoring-latency-three}.
+The CDF in Fig.~\ref{fig:cdf-u-met-pri} illustrates that prioritized Netdata exhibits monitoring latency that lies between {\sysname} and Netdata up to around the 98th percentile.
+Around the point where it begins to exceed the latency of standard Netdata, the tail latency starts to increase sharply.
+One possible cause of this behavior is that, under the prioritized Netdata configuration, the Memcached API may fail to respond in a timely manner.
+Fig.~\ref{fig:elapsed-latency-nonpri} and Fig.~\ref{fig:elapsed-latency-pri} show the relationship between monitoring elapsed time and monitoring latency for non-prioritized Netdata and prioritized Netdata respectively.
+In both graphs, we observe latency spikes occurring at one-second intervals.
+These spikes correspond to the moments when Netdata’s child process, \texttt{go.d.plugin}, is invoked to collect user metrics.
+At these points, the plugin issues API requests to Memcached, and the resulting waiting time contributes to the latency.
+Outside of these spike intervals, the prioritized Netdata is able to execute monitoring tasks more promptly, resulting in lower latency.
+In contrast, during the spike intervals, the latency becomes higher with prioritization.
+This is because prioritizing Netdata increases its CPU scheduling preference, which can in turn delay the execution of the Memcached API itself.
+As a result, \texttt{go.d.plugin} must wait longer for the Memcached response, thereby increasing the monitoring latency during these periods.
+
+\textbf{Impact of Monitoring on Host Service Performance. }
+Fig.~\ref{fig:throughput-u-met-pri} presents the Memcached throughput at various sampling intervals when monitoring 10 Memcached instances.
+For both non-prioritized Netdata and prioritized Netdata, the throughput shows no significant difference across all sampling intervals.
+However, in both cases, the Memcached throughput decreases as the sampling interval shortens.
+This indicates that, regardless of prioritization, Netdata continues to degrade the performance of the Memcached service under frequent monitoring.

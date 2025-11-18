@@ -1,0 +1,8 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+In cloud environments transitioning to microservices, traditional monitoring methods no longer meet the demands of cloud-native monitoring.
+We propose {\sysname}, a lightweight monitoring framework that extends XDP with minimal modifications.
+{\sysname} completes monitoring tasks within the SoftIRQ layer, bypassing delays caused by CPU scheduling and the overhead associated with user-to-kernel context switches in traditional approaches.
+Despite its lightweight design, {\sysname} maintains the same metric collection capabilities as conventional monitoring systems.
+Our experimental results demonstrate that {\sysname} achieves both low-latency monitoring and minimal interference with host services, outperforming traditional monitoring methods.

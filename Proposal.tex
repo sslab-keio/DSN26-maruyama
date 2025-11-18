@@ -1,0 +1,52 @@
+\section{X-Monitor}
+\label{sec:proposal}
+
+% \begin{figure*}[t]
+%    \centering
+%     \includegraphics[width=0.75\textwidth]{SoCC-2025/figures/illustration/run-to-completion.pdf}
+%    \caption{Execution Model Comparison. (1) In traditional monitoring systems, execution may be delayed due to lock contention within the network stack and waiting for CPU scheduling. (2) In contrast, {\sysname} adopts a run-to-completion model: once execution begins, it proceeds without being preempted or blocked by lock contention or scheduling delays, ensuring uninterrupted processing from start to finish.
+%    }
+%    \label{fig:run-to-completion}
+%\end{figure*}
+
+We propose {\sysname}, a lightweight monitoring system for cloud-native services that achieves low-latency monitoring while minimizing interference with the execution of microservices.
+{\sysname} leverages eXpress Data Path (XDP), a lightweight packet processing mechanism, and provides the following three key features:
+
+\begin{enumerate}
+    \item \textbf{In-Kernel Monitoring:} Monitoring is completed entirely in kernel space, eliminating user–kernel context switches.
+    \item \textbf{SoftIRQ-Layer Execution:} Since monitoring is performed at the SoftIRQ layer, there is no need to wait for CPU allocation due to scheduling.
+    \item \textbf{Programmable Metric Selection:} Since the monitoring logic is implemented as an XDP program, users can flexibly choose which metrics to collect.
+\end{enumerate}
+
+Major cloud providers, including Amazon Web Services (AWS), Microsoft Azure, and Google Cloud Platform, offer Ethernet-based NICs as the default option for most instance types.
+% While advanced networking technologies such as Remote Direct Memory Access (RDMA) are available in these environments, they often involve additional costs or configuration overhead.
+While advanced networking technologies such as Remote Direct Memory Access (RDMA) are available in these environments, their usage is limited to specific instance types, which are often expensive.
+For example, AWS offers Elastic Fabric Adapter (EFA), an RDMA-capable NIC designed for HPC and ML workloads.
+EFA is only available on a limited set of instance types, such as c8gn.48xlarge, m6i.metal, and p6-b200.48xlarge~\cite{aws-efa-doc}.
+These EFA-enabled instances are generally more expensive, making RDMA less accessible for cost-sensitive deployments.
+
+
+To demonstrate that {\sysname} can support diverse and practical monitoring use cases, we examine how typical metrics are managed in most software systems.
+
+\textbf{Metric Characteristics. }
+Most monitoring metrics are simple counters that are updated in place after initialization.
+Since the memory addresses of these counters remain unchanged,
+{\sysname} can reliably collect metrics by referencing the memory addresses registered during initialization.
+These characteristics are widely observed across both kernel and user metrics---such as per-CPU packet counts, memory usage statistics, and request rates.
+As a result, {\sysname} can support a broad range of metrics comparable to traditional monitoring systems, while maintaining a lightweight and efficient design.
+
+\textbf{XDP Overview. }
+{\sysname} is implemented using XDP, an eBPF-based framework that enables high-performance packet processing in the kernel space.
+As illustrated in Fig.~\ref{fig:overview-xdp}, XDP programs are triggered upon packet arrival and execute at the device driver layer, specifically in the SoftIRQ context, immediately after the hardware interrupt.
+This design allows XDP to bypass the conventional Linux networking stack—prior to \texttt{sk\_buff} allocation—thereby achieving low-latency packet processing.
+To ensure the safety and reliability of kernel execution, XDP includes a static verification mechanism, known as verifier~\cite{verifier}, which enforces strict constraints on loaded programs.
+Verifier checks for invalid memory accesses, unbounded loops, and other unsafe behaviors, allowing only safe and well-formed programs to be loaded into the kernel.
+
+\textbf{Challenges. }
+Building {\sysname} atop XDP introduces two main challenges.  
+First, the monitoring logic must pass verifier’s checks, which is non-trivial when accessing memory regions used to store metrics.  
+Direct access to external memory is typically disallowed by verifier, requiring a mechanism that safely exposes metric memory to the XDP context while satisfying all verification rules.
+
+Second, {\sysname} must ensure that metric collection is strictly non-blocking.
+Since XDP runs in the SoftIRQ context, any blocking operations—such as waiting for locks or accessing swapped-out memory—could stall the system and degrade performance.  
+To ensure robust system behavior, {\sysname} guarantees that all metric accesses are safe and non-blocking during monitoring execution.

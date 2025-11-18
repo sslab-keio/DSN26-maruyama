@@ -1,0 +1,30 @@
+\section{Relatedwork}
+\label{sec:related-work}
+
+\textbf{Monitoring system in distributed environments. }
+Numerous studies have been dedicated to the design of monitoring systems.
+Many of these studies primarily concentrate on aspects such as data analytics~\cite{monalytics, sieve}, bug tracing~\cite{partial-failures, pivot}, and visualization~\cite{health-monitoring}.
+
+Zero~\cite{zero} concentrates on low-overhead and low-latency monitoring using RDMA.
+This framework doesn't use the host CPU to collect metrics and packet processing, which leads to almost zero overhead and low latency despite high loads of the monitored server.
+In this approach, all monitored servers require RNIC, which is expensive hardware.
+Although {\sysname} uses a small portion of the host's CPU, it operates over conventional Ethernet, making it easy to deploy in cloud environments.
+
+Safetimer~\cite{safetimer} is another approach to prevent system failure due to the false detection of failure.
+This framework enhances existing timeout detection protocols to tolerate long delays of monitoring messages.
+In this approach, however, since it does not aim for low-latency monitoring, it may fail to capture the frequently changing metrics of cloud environments in real time.
+{\sysname} can prevent false timeout detection, by achieving low-latency monitoring.
+
+\textbf{eBPF application. }
+eBPF was only used for packet filtering~\cite{BSD}, and load balancing~\cite{load-balancer} because of its restricted programming model from the beginning.
+These days, eBPF can be used to offload more operations into kernel space which are small yet critical operations.
+XRP~\cite{xrp} allows applications to execute user-defined storage functions in the NVMe driver, safely bypassing most of the kernel storage stack to achieve low-overhead file I/O operations.
+Electrode~\cite{electrode} accelerates distributed protocols using XDP packet processing.
+SynCord~\cite{SynCord} leverages eBPF to inject workload-specific and hardware-aware kernel lock policies.
+
+\textbf{Kernel-bypass packet processing. }
+Due to the overhead associated with the monolithic kernel networking stack, many efforts have turned to kernel bypass techniques to achieve lower latency and reduced overhead.
+Demikernel~\cite{demikernel}, mTCP~\cite{mtcp}, eRPC~\cite{datacenter-rpcs} attempt to eliminate the kernel from the I/O datapath.
+In general, the drawback of granting users direct access to I/O is that applications must actively poll for I/O to achieve high performance.
+As a result, cores cannot be shared among processes, leading to substantial under-utilization when I/O is not the primary bottleneck.
+{\sysname} leverages eBPF to unclog some of the bottlenecks in the kernel networking stack without completely shifting kernel bypass.

@@ -1,0 +1,150 @@
+\section{Introduction}
+\label{sec:introduction}
+
+\begin{figure*}[t]  % Use figure* for spanning across both columns
+    \centering
+    % First image (a)
+    \hfill
+    % \hfill
+    \begin{minipage}[b]{0.36\textwidth}  % Adjust width as needed
+        \centering
+        \includegraphics[width=\textwidth]{fig/netdata-overview.pdf}
+        \subcaption{Traditional Monitoring System}
+        \label{fig:traditional-monitoring}
+    \end{minipage}
+    \hfill
+    % Second image (b)
+    \begin{minipage}[b]{0.36\textwidth}  % Adjust width as needed
+        \centering
+        \includegraphics[width=\textwidth]{fig/x-monitor-overview.pdf}
+        \subcaption{{\sysname}}
+        \label{fig:x-monitor}
+    \end{minipage}
+    \hfill
+    \hfill
+    \caption{Monitoring system overview. (a) In traditional monitoring systems, the metrics collector runs in user space, incurring scheduling delays and frequent context switches due to system calls. (b) In {\sysname}, the metrics collector runs in kernel space, avoiding such overhead.}
+    \label{fig:monitoring-overview}
+\end{figure*}
+
+Cloud services have undergone a drastic shift from monolithic architectures to microservices.
+Cloud-native applications are composed of tens or hundreds of microservices, each operating independently to deliver specific functionalities~\cite{qos-microservices, seer}.
+These microservices typically run on containerized platforms, providing benefits such as scalability, isolation, and ease of deployment~\cite{xcontainers}.
+Microservices require low latency and high availability to ensure they operate without failures or interruptions, and they are often deployed in high-density environments to maximize resource utilization.
+
+Monitoring has become increasingly critical to ensure the service-level agreement (SLA) of cloud services, making the monitoring system an indispensable part of modern cloud operations~\cite{pivot, microview}.
+Effective monitoring involves collecting both kernel and user metrics~\cite{GRANO} to coordinate tens or hundreds of microservices.
+% This maintains the reliability of cloud-native environments.
+
+Monitoring microservices presents unique requirements.
+%
+First, to ensure accurate decision-making, monitored metrics must be collected in real time.
+In microservice-based architectures, the state of individual services changes frequently and unpredictably, while the continuous launch and termination of new services constantly change resource allocation.
+For instance, AWS Lambda can start up to 15,000 containers per second for production workloads and is expected to scale further for heavier workloads~\cite{awscontainers}.
+Failing to capture these frequent changes in a timely manner can lead to incorrect load balancing or false-positive failure detections, ultimately resulting in degraded system performance and reduced availability.
+Therefore, low-latency monitoring is essential to maintain an up-to-date global view of the system and ensure SLA in such dynamic environments.
+
+% Second, the monitoring system is desirable not to interfere with the performance of host services.
+% As microservices are deployed in high-density environments, minor overheads caused by monitoring can have non-negligible degradation in service performance, potentially degrading user experience.
+Second, the monitoring system should not interfere with the performance of host services.
+In high-density environments, where microservices are densely packed and highly interdependent, even small monitoring overheads can lead to degradation in service throughput~\cite{zero, microview}, and also increase response latency and may cause request backlogs or timeouts, directly impacting user experience.
+Moreover, performance degradation undermines the service’s ability to meet its SLA.
+% In practice, on Alibaba Cloud during the W11 shopping festival, monitoring caused a 6.25\% reduction in Redis throughput due to the interference introduced by the monitoring process~\cite{zero}.
+% To prevent this, it is crucial to design monitoring systems that minimize overhead and ensure that the performance of core services remains unaffected.
+
+% However, traditional monitoring systems are often not sufficient to meet these requirements.
+% Traditional monitoring systems, such as NetData~\cite{netdata} and Prometheus~\cite{prometheus}, are typically implemented as user-space processes.
+% In high-density environments, where a large number of processes are actively running, the scheduling delays for allocating CPU resources to the monitoring process can become non-negligible. 
+% These delays increase the monitoring latency, making it harder to collect real-time metrics effectively.
+% Moreover, when the monitoring interval is reduced to capture finer-grained data, the frequent user/kernel context switches introduce considerable overhead.
+% This overhead not only inflates the tail latency of monitoring messages but also leads to performance degradation in cloud services.
+% As a result, the impact of monitoring on the performance of host services becomes more pronounced in such environments, undermining their reliability and efficiency.
+
+Traditional monitoring systems are often not sufficient to meet these requirements.
+Traditional monitoring systems, such as NetData~\cite{netdata} and Prometheus~\cite{prometheus}, are typically implemented as user-space processes.
+In high-density environments, where a large number of processes are actively running, the scheduling delays for allocating CPU time to the monitoring process can become non-negligible. 
+These delays increase the monitoring latency, making it harder to collect metrics in real time.
+Moreover, since the monitoring interval must be short enough to collect metrics in real time, the frequent user/kernel context switches introduce considerable overhead.
+This overhead not only increases the tail latency of monitoring messages but also leads to performance degradation in cloud services.
+As a result, the negative side effects of monitoring on the performance of host services become more pronounced in such environments.
+In fact, such performance issues have been observed in real-world deployments.
+For example, during China's shopping festival ``double eleven'', Alibaba Cloud reported that the monitoring latency increased by more than 10$\times$, and the throughput of services decreased by 6.25\% due to the overhead introduced by monitoring~\cite{zero}.
+
+We propose {\sysname}, a monitoring framework leveraging eXpress Data Path (XDP)~\cite{xdp}, to achieve low-latency and low-overhead monitoring.
+XDP is a packet processing mechanism integrated into the Linux kernel, designed for handling packets directly at the network device driver level.
+XDP allows users to write custom packet processing programs, which are compiled into eBPF bytecode, and then loaded into the kernel space.
+The eBPF verifier~\cite{verifier} verifies the correctness of the program and ensures only safe programs are loaded and executed within the kernel space.
+By leveraging XDP, X-Monitor works on conventional Ethernet NICs.
+The key features of {\sysname} are the following.
+
+\textbf{In-Kernel Monitoring. } 
+In {\sysname}, both metric collection and packet processing are performed entirely within the kernel space.
+This design eliminates user–kernel context switch overhead.
+
+\textbf{SoftIRQ-Layer Execution. }
+% By executing the monitoring logic at the SoftIRQ layer, the system reduces the delay between packet arrival and the start of monitoring.
+% Furthermore, since SoftIRQ handlers run to completion and are only interrupted by HardIRQs, the monitoring logic executes without preemption, achieving consistently low latency.
+By executing the monitoring logic at the SoftIRQ layer, the system reduces the delay between packet arrival and the start of monitoring.
+Furthermore, since SoftIRQ handlers run to completion and are not preempted by anything other than HardIRQs, the monitoring logic executes with consistently low latency.
+
+\textbf{Programmable Metric Selection. } 
+% The proposed system allows users to flexibly select which metrics to collect based on their monitoring goals.
+% Users can write custom monitoring logic as XDP programs, which are safely attached to the NIC after passing the eBPF verifier.
+% In addition to selecting specific metrics, users can also apply in-kernel computation before transmitting the results to monitoring clients.
+In {\sysname}, users write custom monitoring logic as XDP programs and load them into the kernel.
+This approach enables fully in-kernel monitoring while preserving flexibility, as users can freely choose which metrics to collect and how to process them.
+% Simple in-kernel computations can also be applied before sending metrics to the monitoring client.
+In-kernel computations are possible to summarize the metrics before sending them to the monitoring client.
+
+%% Before Revision
+% However, there are challenges associated with obtaining metrics using existing XDP implementations.
+% (1) The first challenge involves the verifier.
+% Typically, programs designed to access metrics are rejected by the verifier, making it difficult to obtain the desired metrics.
+% To address this issue, we extended the capabilities of eBPF by adding custom helper functions.
+% These functions allow metric-accessing programs to pass the verifier’s safety checks while enabling secure access to the required metrics.
+% (2) The second challenge relates to the requirement for non-blocking execution.
+% Since XDP operates at the softIRQ layer, any metric collection performed in this context must be non-blocking.
+% Blocking at the softIRQ layer can lead to delays in processing other critical system tasks, negatively impacting overall system performance.
+% To ensure non-blocking behavior, we verified through code inspection that metric collection via \texttt{procfs} does not involve locking operations that could cause contention.
+% We also proactively locked relevant user metric data in memory using \texttt{mlock}, ensuring that the user metrics would not be swapped out during execution and thus avoiding delays due to swap-in operations.
+% (3) The third challenge is related to packet size limitations.
+% Standard XDP is restricted to handling packets no larger than the MTU, which poses a problem for monitoring systems that need to transmit metrics exceeding the MTU size.
+% To overcome this limitation, we leverage the XDP multi-buffer feature, introduced in Linux 5.18, which enables XDP to process packets that span multiple buffers~\cite{multibuffer}.
+
+{\sysname} enables XDP programs to collect kernel metrics through \texttt{procfs}, an interface designed originally to expose kernel metrics to the user level.
+By accessing the \texttt{procfs} interface from the inside of the kernel, {\sysname} can obtain all the kernel metrics \texttt{procfs} provides.
+To collect user metrics, {\sysname} provides a shared memory space between the kernel and the user-space monitors.
+{\sysname} enables XDP programs to access the shared memory to collect user metrics.
+
+Implementing {\sysname} is not straightforward.
+First, accessing kernel memory from an XDP program is prohibited to ensure memory safety.
+Any program that attempts to access kernel memory is rejected by the verifier.
+{\sysname} adds custom helper functions that allow XDP programs to access kernel/user metrics without being rejected by the eBPF verifier.
+Second, non-blocking execution must be guaranteed in XDP programs.
+Blocking at the SoftIRQ layer can cause delays in other critical system tasks, which may negatively affect overall system performance. 
+To ensure that the added helper functions are non-blocking, it must be guaranteed that neither the helper functions nor any kernel functions they invoke perform blocking operations such as acquiring locks, and that they do not access memory pages that may be subject to swapping.
+We confirmed through code inspection that metric collection via \texttt{procfs} does not involve any locking.
+We also pinned the corresponding memory regions in physical memory to prevent user metrics from being swapped out.
+
+We evaluate {\sysname} to show that it achieves lower monitoring latency and causes less interference with host service throughput compared to Netdata.
+Our experimental results demonstrate that {\sysname} outperforms Netdata.
+Specifically, it reduces the 99.9th-percentile monitoring latency by 2 orders of magnitude.
+% In YCSB workloads using Memcached, it reduces the throughput degradation by 11.8\% compared to Netdata.  
+In YCSB workloads using Memcached, Netdata caused an 11.8\% reduction in throughput, whereas {\sysname} showed no degradation.
+
+The contributions of this paper can be summarized as follows:
+\begin{itemize}
+  \item We propose {\sysname}, a novel monitoring framework that leverages XDP to achieve low-latency and low-overhead monitoring in high-density, performance-critical cloud environments. {\sysname} executes entirely in-kernel to eliminate context switches and minimize monitoring delays.
+  % \item We address key challenges in integrating metric collection into the XDP layer: enabling verifier-safe access to kernel and user-space metrics via custom eBPF helper functions, and achieving non-blocking execution at the softIRQ level by inspecting kernel interfaces and using \texttt{mlock} to pin user-space metric memory.
+  \item We address key challenges in integrating metric collection into the XDP layer: safe access to kernel and user-space metrics within the constraints of the eBPF verifier, non-blocking execution within the SoftIRQ context.
+  \item We evaluate {\sysname} on Memcached and YCSB workloads, demonstrating lower monitoring latency and reduced overhead compared to Netdata.
+\end{itemize}
+
+The rest of this paper is organized as follows:
+Section \ref{sec:background} describes the background and motivation of our research. 
+Section \ref{sec:proposal} describes the overview and implementation of our proposal.
+Section \ref{sec:design-implementation} shows the system design of our framework. 
+% Section \ref{sec:case-study} shows the case study of both kernel and user monitoring. 
+Section \ref{sec:evaluation} shows the experimental results. 
+Section \ref{sec:related-work} describes related works. 
+Section \ref{sec:conclusion} concludes the paper.
+
