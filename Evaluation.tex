@@ -1,32 +1,57 @@
 \section{Evaluation}
 \label{sec:evaluation}
 
+% \begin{figure*}[!p]
+%   \centering
+%   \subfloat[1 instance (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance1-kernel.png}\label{fig:instance1-kernel}}\hfill
+%   \subfloat[5 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance5-kernel.png}\label{fig:instance5-kernel}}\hfill
+%   \subfloat[10 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-kernel.png}\label{fig:instance10-kernel}}\\[10pt]
+%   % \subfloat[10 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-kernel.png}\label{fig:instance10-kernel}}\\
+%   \subfloat[interval 1000 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval1000-kernel.png}\label{fig:interval1000-kernel}}\hfill
+%   \subfloat[interval 100 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval100-kernel.png}\label{fig:interval100-kernel}}\hfill
+%   \subfloat[interval 10 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval10-kernel.png}\label{fig:interval10-kernel}}
+%   \caption{Monitoring latency of \textbf{kernel} metrics under varying numbers of Memcached instances and sampling intervals}
+%   \label{fig:monitor-latency-kernel}
+% \end{figure*}
+
+% \begin{figure*}[!p]
+%   \centering
+%   \subfloat[1 instance (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance1-user.png}\label{fig:instance1-user}}\hfill
+%   \subfloat[5 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance5-user.png}\label{fig:instance5-user}}\hfill
+%   \subfloat[10 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-user.png}\label{fig:instance10-user}}\\[10pt]
+%   % \subfloat[10 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-user.png}\label{fig:instance10-user}}\\
+%   \subfloat[interval 1000 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval1000-user.png}\label{fig:interval1000-user}}\hfill
+%   \subfloat[interval 100 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval100-user.png}\label{fig:interval100-user}}\hfill
+%   \subfloat[interval 10 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval10-user.png}\label{fig:interval10-user}}
+%   \caption{Monitoring latency of \textbf{user} metrics under varying numbers of Memcached instances and sampling intervals}
+%   \label{fig:monitor-latency-user}
+% \end{figure*}
+
 \begin{figure*}[!p]
   \centering
-  \subfloat[1 instance (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance1-kernel.png}\label{fig:instance1-kernel}}\hfill
-  \subfloat[5 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance5-kernel.png}\label{fig:instance5-kernel}}\hfill
-  \subfloat[10 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-kernel.png}\label{fig:instance10-kernel}}\\[10pt]
+  \subfloat[1 instance (kernel)]{\includegraphics[width=0.33\textwidth]{graph/Latency/cdf-kernelmetrics-1mcd.png}\label{fig:cdf-kernel-1mcd}}\hfill
+  \subfloat[5 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/Latency/cdf-kernelmetrics-5mcd.png}\label{fig:cdf-kernel-5mcd}}\hfill
+  \subfloat[10 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/Latency/cdf-kernelmetrics-10mcd.png}\label{fig:cdf-kernel-10mcd}}\\[10pt]
   % \subfloat[10 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-kernel.png}\label{fig:instance10-kernel}}\\
-  \subfloat[interval 1000 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval1000-kernel.png}\label{fig:interval1000-kernel}}\hfill
-  \subfloat[interval 100 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval100-kernel.png}\label{fig:interval100-kernel}}\hfill
-  \subfloat[interval 10 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval10-kernel.png}\label{fig:interval10-kernel}}
+  % \subfloat[interval 1000 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval1000-kernel.png}\label{fig:interval1000-kernel}}\hfill
+  % \subfloat[interval 100 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval100-kernel.png}\label{fig:interval100-kernel}}\hfill
+  % \subfloat[interval 10 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval10-kernel.png}\label{fig:interval10-kernel}}
   \caption{Monitoring latency of \textbf{kernel} metrics under varying numbers of Memcached instances and sampling intervals}
   \label{fig:monitor-latency-kernel}
 \end{figure*}
 
 \begin{figure*}[!p]
   \centering
-  \subfloat[1 instance (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance1-user.png}\label{fig:instance1-user}}\hfill
-  \subfloat[5 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance5-user.png}\label{fig:instance5-user}}\hfill
-  \subfloat[10 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-user.png}\label{fig:instance10-user}}\\[10pt]
+  \subfloat[1 instance (user)]{\includegraphics[width=0.33\textwidth]{graph/Latency/cdf-usermetrics-1mcd.png}\label{fig:cdf-user-1mcd}}\hfill
+  \subfloat[5 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/Latency/cdf-kernelmetrics-5mcd.png}\label{fig:cdf-user-5mcd}}\hfill
+  \subfloat[10 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/Latency/cdf-usermetrics-10mcd.png}\label{fig:cdf-user-10mcd}}\\[10pt]
   % \subfloat[10 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-user.png}\label{fig:instance10-user}}\\
-  \subfloat[interval 1000 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval1000-user.png}\label{fig:interval1000-user}}\hfill
-  \subfloat[interval 100 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval100-user.png}\label{fig:interval100-user}}\hfill
-  \subfloat[interval 10 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval10-user.png}\label{fig:interval10-user}}
+  % \subfloat[interval 1000 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval1000-user.png}\label{fig:interval1000-user}}\hfill
+  % \subfloat[interval 100 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval100-user.png}\label{fig:interval100-user}}\hfill
+  % \subfloat[interval 10 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval10-user.png}\label{fig:interval10-user}}
   \caption{Monitoring latency of \textbf{user} metrics under varying numbers of Memcached instances and sampling intervals}
   \label{fig:monitor-latency-user}
 \end{figure*}
-
 
 
 To evaluate {\sysname}, we conducted some experiments.
@@ -284,28 +309,28 @@ We evaluate the monitoring overhead based on two factors: the CPU utilization re
 \end{table}
 
 
-\begin{figure}[t]  % Use figure* for spanning across both columns
-    \centering
-    % First image (a)
-    \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as needed
-        \centering
-        \includegraphics[width=\textwidth]{graph/cpu-util-instance.png}
-        \subcaption{CPU utilization vs Instances}
-        \label{fig:cpu-util-instance}
-    \end{minipage}
-    \hfill
-    % Second image (b)
-    \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as needed
-        \centering
-        \includegraphics[width=\textwidth]{graph/cpu-util-interval.png}
-        \subcaption{CPU utilization vs Interval}
-        \label{fig:cpu-util-interval}
-    \end{minipage}
-    \hfill
-    % Overall caption
-    \caption{Monitoring CPU utilization.}
-    \label{fig:cpu-util}
-\end{figure}
+% \begin{figure}[t]  % Use figure* for spanning across both columns
+%     \centering
+%     % First image (a)
+%     \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{graph/cpu-util-instance.png}
+%         \subcaption{CPU utilization vs Instances}
+%         \label{fig:cpu-util-instance}
+%     \end{minipage}
+%     \hfill
+%     % Second image (b)
+%     \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{graph/cpu-util-interval.png}
+%         \subcaption{CPU utilization vs Interval}
+%         \label{fig:cpu-util-interval}
+%     \end{minipage}
+%     \hfill
+%     % Overall caption
+%     \caption{Monitoring CPU utilization.}
+%     \label{fig:cpu-util}
+% \end{figure}
 
 \textbf{CPU Utilization.}
 We measure the CPU utilization of the monitoring server while it handles requests for Memcached metrics sent from the monitoring client.
@@ -336,67 +361,67 @@ Therefore, regardless of the sampling interval configured for Netdata, the plugi
 % Overall, this efficiency stems from the architectural differences between the two systems: Netdata incurs substantial overhead due to context switches and processing within the network stack, whereas {\sysname} eliminates these components and operates in a much more lightweight manner.
 
 
-\begin{figure}[t]  % Use figure* for spanning across both columns
-    \centering
-    % First image (a)
-    \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as need≤≤≤ed
-        \centering
-        \includegraphics[width=\textwidth]{graph/Memcached-throughput-k-met.png}
-        \subcaption{Memcached throughput while monitoring kernel metrics}
-        \label{fig:throughput-k-met}
-    \end{minipage}
-    \hfill
-    % Second image (b)
-    \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as needed
-        \centering
-        \includegraphics[width=\textwidth]{graph/Memcached-throughput-u-met.png}
-        \subcaption{Memcached throughput while monitoring user metrics}
-        \label{fig:throughput-u-met}
-    \end{minipage}
-    \hfill
-    % Overall caption
-    \caption{Memcached throughput}
-    \label{fig:memcached-throughput}
-\end{figure}
+% \begin{figure}[t]  % Use figure* for spanning across both columns
+%     \centering
+%     % First image (a)
+%     \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as need≤≤≤ed
+%         \centering
+%         \includegraphics[width=\textwidth]{graph/Memcached-throughput-k-met.png}
+%         \subcaption{Memcached throughput while monitoring kernel metrics}
+%         \label{fig:throughput-k-met}
+%     \end{minipage}
+%     \hfill
+%     % Second image (b)
+%     \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{graph/Memcached-throughput-u-met.png}
+%         \subcaption{Memcached throughput while monitoring user metrics}
+%         \label{fig:throughput-u-met}
+%     \end{minipage}
+%     \hfill
+%     % Overall caption
+%     \caption{Memcached throughput}
+%     \label{fig:memcached-throughput}
+% \end{figure}
 
-\begin{figure*}[t]
-  \centering
+% \begin{figure*}[t]
+%   \centering
 
-  % First image (a)
-  \begin{minipage}[t]{0.35\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{graph/cdf-user-pri.png}
-    \subcaption{CDF of User Monitoring Latency}
-    \label{fig:cdf-u-met-pri}
-  \end{minipage}
-  \hspace{0.01\textwidth}
-  % Second image (b)
-  \begin{minipage}[t]{0.30\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{graph/elapsed-latency-nonpri.png}
-    \subcaption{Monitoring Latency of Non-Prioritized Netdata}
-    \label{fig:elapsed-latency-nonpri}
-  \end{minipage}
-  \hspace{0.01\textwidth}
-  % Third image (c)
-  \begin{minipage}[t]{0.30\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{graph/elapsed-latency-pri.png}
-    \subcaption{Monitoring Latency of Prioritized Netdata}
-    \label{fig:elapsed-latency-pri}
-  \end{minipage}
+%   % First image (a)
+%   \begin{minipage}[t]{0.35\textwidth}
+%     \centering
+%     \includegraphics[width=\textwidth]{graph/cdf-user-pri.png}
+%     \subcaption{CDF of User Monitoring Latency}
+%     \label{fig:cdf-u-met-pri}
+%   \end{minipage}
+%   \hspace{0.01\textwidth}
+%   % Second image (b)
+%   \begin{minipage}[t]{0.30\textwidth}
+%     \centering
+%     \includegraphics[width=\textwidth]{graph/elapsed-latency-nonpri.png}
+%     \subcaption{Monitoring Latency of Non-Prioritized Netdata}
+%     \label{fig:elapsed-latency-nonpri}
+%   \end{minipage}
+%   \hspace{0.01\textwidth}
+%   % Third image (c)
+%   \begin{minipage}[t]{0.30\textwidth}
+%     \centering
+%     \includegraphics[width=\textwidth]{graph/elapsed-latency-pri.png}
+%     \subcaption{Monitoring Latency of Prioritized Netdata}
+%     \label{fig:elapsed-latency-pri}
+%   \end{minipage}
 
-  \caption{Monitoring latency comparison}
-  \label{fig:monitoring-latency-three}
-\end{figure*}
+%   \caption{Monitoring latency comparison}
+%   \label{fig:monitoring-latency-three}
+% \end{figure*}
 
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=0.8\columnwidth]{graph/Memcached-throughput-u-met-pri.png}
-    \caption{Memcached Throughput while Monitoring User Metrics}
-    \label{fig:throughput-u-met-pri}
-\end{figure}
+% \begin{figure}[t]
+%     \centering
+%     \includegraphics[width=0.8\columnwidth]{graph/Memcached-throughput-u-met-pri.png}
+%     \caption{Memcached Throughput while Monitoring User Metrics}
+%     \label{fig:throughput-u-met-pri}
+% \end{figure}
 
 \textbf{Impact of Monitoring on Host Service Performance. }
 To evaluate the extent to which monitoring interferes with the host’s services, we examine the throughput of Memcached during monitoring.

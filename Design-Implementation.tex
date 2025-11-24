@@ -10,12 +10,6 @@ Section~\ref{subsec:non-blocking} describes the non-blocking monitoring, and Sec
 
 \subsection{Overview}
 \label{subsec:overview-of-xmonitor}
-% Upon receiving a monitoring packet from the monitoring client, X-Monitor completes the metric collection entirely within the kernel space and sends a response back to the monitoring client.
-% This means that X-Monitor operates in a run-to-completion manner, ensuring that the monitoring process runs from start to finish without being preempted, except for hardware IRQs.
-% Therefore, {\sysname} performs low-latency, low-overhead monitoring by avoiding user-kernel context switches and scheduling delays, and by executing monitoring tasks at the softIRQ layer in a run-to-completion manner.
-% Additionally, the ability to dynamically load XDP programs allows users to flexibly modify which metrics to collect.
-
-% Upon receiving a monitoring packet, the metrics collector—implemented as an XDP program running on the eBPF virtual machine—collects both user-space and kernel-space metrics and sends them back to the monitoring client.
 
 Fig.~\ref{fig:x-monitor} shows the overview of {\sysname}.
 Upon receiving a packet, the Metrics Collector—an XDP program running on the eBPF virtual machine—is executed at an early stage, before the packet enters the network stack.
@@ -44,34 +38,13 @@ Moreover, simple in-kernel computations can be performed on the collected metric
 \subsection{Interface for Metric Collection}
 \label{subsec:metrics-collection}
 To collect metrics from an XDP program, a key challenge arises: metric collection involves memory access that falls outside the bounds permitted by eBPF, which causes the program to fail verifier’s safety checks. 
-To address this issue, we add a BPF helper function specifically designed for metric collection.
+To address this issue, we add BPF helper functions specifically designed for metric collection.
 BPF helper functions are predefined interfaces in the Linux kernel that allow eBPF programs to interact with kernel objects or exchange data with the kernel.
 While the verifier checks how a BPF helper function is called --- for example, ensuring type safety and calling context --- it does not analyze the internal behavior of the helper itself.
 % This property allows us to safely extend the monitoring capabilities of XDP without compromising verifier security.
 This property allows us to safely extend the monitoring capabilities of XDP without modifying the verifier, thereby preserving the kernel’s guarantees of memory safety and program isolation.
-By introducing a dedicated BPF helper function for metrics access into the Linux kernel, users can collect necessary metrics in their monitoring programs while still passing verifier’s checks.
+By introducing a dedicated BPF helper function for metrics access into the Linux kernel, {\sysname} can collect necessary metrics in their monitoring programs while still passing verifier’s checks.
 This approach enables flexible and safe in-kernel monitoring within the constraints of the eBPF execution model.
-
-% To collect kernel metrics, the BPF helper function internally leverages \texttt{procfs}, a pseudo file system widely used by traditional monitoring systems to expose runtime kernel information.
-% Unlike ordinary files backed by physical storage, \texttt{procfs} files are dynamically generated at access time by invoking kernel functions that read in-memory data structures.
-% These files are typically accessed via the \texttt{read} system call from user space, but do not involve disk I/O; instead, they return data directly from kernel memory.
-
-% Most kernel metrics provided through \texttt{procfs} are maintained as counters that are continuously updated by the kernel to reflect the current system state.
-% These include statistics such as CPU usage (\texttt{/proc/stat}), memory utilization (\texttt{/proc/meminfo}), process information (\texttt{/proc/\textit{pid}}), and network activity (\texttt{/proc/net/dev}).
-% Because the values are generated on demand, they offer accurate, real-time visibility into the operating system.
-
-% The BPF helper function replicates this behavior by invoking the same internal kernel functions used by \texttt{procfs}.
-% As a result, it enables eBPF programs to access a wide range of kernel metrics entirely within the kernel context, without relying on user-space transitions.
-% This ensures that in-kernel monitoring retains the same observability as conventional monitoring tools.
-
-% This approach is also safe.
-% Since the helper relies on well-defined, read-only kernel interfaces already used in production by \texttt{procfs}, it avoids unsafe memory operations.
-% Furthermore, the eBPF verifier statically analyzes the helper’s usage to guarantee memory safety and compliance with kernel constraints.
-% By building on trusted kernel mechanisms and verifier-enforced safety checks, the helper enables robust and secure metric access.
-
-% Crucially, because traditional monitoring systems depend on \texttt{procfs} for kernel metric collection, the proposed method achieves equivalent coverage.
-% By accessing the same underlying data through verified in-kernel logic, our approach maintains compatibility with existing monitoring practices while avoiding the overhead of context switches and system calls.
-
 
 
 \subsubsection{Collecting Kernel Metrics}
@@ -108,7 +81,7 @@ This approach enables flexible and safe in-kernel monitoring within the constrai
 \end{table}
 
 
-To collect kernel metrics, the BPF helper function utilizes \texttt{procfs}, a pseudo file system commonly employed by traditional monitoring systems to expose runtime kernel information. By relying on the same interface as conventional user-space monitoring tools, the helper enables access to a wide range of kernel metrics, just as traditional monitoring processes do.
+To collect kernel metrics, the BPF helper functions utilize \texttt{procfs}, a pseudo file system commonly employed by traditional monitoring systems to expose runtime kernel information. By relying on the same interface as conventional user-space monitoring tools, the helper enables access to a wide range of kernel metrics, just as traditional monitoring processes do.
 
 Files under \texttt{procfs} --- such as \texttt{/proc/stat}, \texttt{/proc/meminfo} --- are not backed by persistent storage, but are dynamically generated by kernel functions that read in-memory data structures.
 These files expose metrics such as CPU usage, memory utilization, and network activity, most of which are maintained as continuously updated counters.
@@ -130,71 +103,86 @@ The absence of blocking behavior is discussed in Sec.~\ref {subsec:non-blocking}
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.7\columnwidth]{fig/metrics-registration.pdf}
-    \caption{User Metrics Registration. Microservices register the metadata of metrics to metrics descriptor.}
-    \label{fig:metrics-registration}
+    \includegraphics[width=1.0\columnwidth]{fig/user-metrics.pdf}
+    % \caption{User Metrics Registration. Microservices register the metadata of metrics to metrics descriptor.}
+    \caption{Overview of user-metric monitoring.
+        Before monitoring, each microservice registers the physical address and size of its metric structs in a per-process metrics descriptor array.
+        During monitoring, the BPF helper function retrieves the metrics descriptor array by indexing \texttt{port\_tab} with the microservice's port number and accesses the corresponding metric structs using the metadata stored in the array.}
+    \label{fig:user-metric-collection}
 \end{figure}
-% Our design enables safe and efficient retrieval of user metrics from various microservices in a lightweight and non-intrusive manner.
-% As described in Sec.~\ref{sec:proposal}, user metrics are stored in a shared memory region between the kernel and the microservices, and this design allows the XDP program to directly access them with minimal latency.  
-% Importantly, helper functions are designed to be general-purpose so that they can monitor a wide range of microservices.
 
 To efficiently retrieve user metrics from various microservices, it is crucial to support lightweight access to a diverse range of metrics.
 As detailed in Sec.~\ref{sec:proposal}, to enable low-latency retrieval of user metrics from XDP programs, these metrics are placed in shared memory that is accessible from the kernel.
-Our design avoids invoking the APIs of the microservices to prevent interference.
+% Our design avoids invoking the APIs of the microservices to prevent interference.
+Our design collects metrics equivalent to those obtained by conventional APIs while avoiding API invocation to prevent interference.
 
-User metrics are defined by each microservice and are typically organized into multiple C structs (or equivalent representations) that store a set of performance-related fields.
-For instance, Memcached utilizes seven metric structures, including \texttt{struct settings} and \texttt{struct rusage}.
 
-Our system allows XDP programs to select which metrics to collect, aligning with existing monitoring tools.
-Memcached and Redis provide the `stats` and `INFO` commands, respectively, which enable monitoring tools to specify the metrics to be collected.
-Our design preserves this programmability while ensuring low latency and minimal overhead.
 
-To enable XDP programs to retrieve user metrics, two preparatory steps are necessary. 
-%
-First, each user process must register its metrics with the kernel (See Fig.~\ref{fig:metrics-registration}).
-This is done through a custom system call called \texttt{xmon\_reg\_metrics}, which allows the kernel to locate where the metrics are stored (the starting virtual address and the size of the metrics).
-This call is invoked multiple times to register all structures related to the metrics.
-The registered information is stored in a \emph{metrics descriptor} array allocated for each user process.
-A \emph{metric descriptor}, which is an index into the descriptor array, is returned to the microservice.
-When registering, the starting virtual address of the metrics is converted into a physical address.
-The physical pages containing the metrics remain constant during execution, as discussed in Sec.~\ref{subsec:non-blocking}.
-Since the kernel can access any physical address, the helper function can retrieve the registered metrics without needing address translation.
+% Our system allows XDP programs to select which metrics to collect, aligning with existing monitoring tools.
+% Memcached and Redis provide the `stats` and `INFO` commands, respectively, which enable monitoring tools to specify the metrics to be collected.
+% Our design preserves this programmability while ensuring low latency and minimal overhead.
 
-Second, after registering all relevant metric information, the microservice registers a port number that allows a monitoring client to access the user metrics. This port number is associated with the metrics descriptor array; thus, given the port number, an XDP program can look up the corresponding array and collect the user metrics from the registered addresses.
+% \textbf{Preparation for Monitoring. }
+% To enable XDP programs to retrieve user metrics, two preparatory steps are necessary. 
 
-{\sysname}'s helper function retrieves user metrics and copies them into a network packet.
-To allow an XDP program to select specific user metrics, it requires an array of metric descriptors as arguments.
-The user metrics stored in the specified descriptors are copied into the packet, while the metrics not specified are omitted.
-This helper function operates in a lock-free manner because it performs read-only operations on the user metrics and the descriptor array (see Sec.~\ref{subsec:non-blocking}).
-Importantly, this design remains effective even if kernel space is separated from user space as a mitigation against Meltdown, since user metrics are accessed through their physical addresses.
+% First, each user process must register its metrics with the kernel.
+% User metrics are defined by each microservice and are typically organized into multiple C structs (or equivalent representations) that store a set of performance-related fields.
+% For instance, Memcached utilizes seven metric structures, including \texttt{struct settings} and \texttt{struct rusage}.
+% This is done through a custom system call called \texttt{xmon\_reg\_metrics}, which allows the kernel to locate where the metrics are stored (the starting virtual address and the size of the metrics).
+% This call is invoked multiple times to register all structures related to the metrics.
+% The registered information is stored in a \emph{metrics descriptor} array allocated for each user process.
+% A \emph{metric descriptor}, which is an index into the descriptor array, is returned to the microservice.
+% When registering, the starting virtual address of the metrics is converted into a physical address.
+% The physical pages containing the metrics remain constant during execution, as discussed in Sec.~\ref{subsec:non-blocking}.
+% Since the kernel can access any physical address, the helper function can retrieve the registered metrics without needing address translation.
+
+% Second, after registering all relevant metric information, the microservice registers a port number that allows a monitoring client to access the user metrics. This port number is associated with the metrics descriptor array; thus, given the port number, an XDP program can look up the corresponding array and collect the user metrics from the registered addresses.
+
+
+\textbf{Preparation for Monitoring. }
+To allow XDP programs to access metrics in shared memory, each metric must be registered with the kernel in advance, including its address, size, and the monitored process's port number.
+To store this information, {\sysname} maintains a per-process metrics descriptor array, which holds the address and size of each metric struct exposed by the process (Fig.~\ref{fig:user-metric-collection}).
+User-level metrics are typically organized as multiple C structs.
+For example, Memcached stores its metrics in several structs, such as \texttt{struct stats} and \texttt{struct settings}.
+Following this design, {\sysname} registers metrics at the granularity of these metric structs rather than individual fields, which reduces the number of helper function invocations.
+
+When a monitored process starts, it opens \texttt{/dev/xmon}.
+At this point, no metric information has been registered yet, but the file descriptor returned by \texttt{open} is associated with a per-process context that will later hold the metrics descriptor array.
+Metric information is registered via three custom ioctls invoked on this file descriptor.
+The first ioctl, \texttt{XMON\_IOC\_CREATE}, takes as an argument the number of metric structs and allocates a metrics descriptor array with that number of elements.
+The second ioctl, \texttt{XMON\_IOC\_SET\_ELEM}, is invoked once per metric struct.
+It receives the struct's starting address and size as arguments and stores them in the appropriate element of the metrics descriptor array.
+During this registration, the ioctl converts the virtual address to a physical address.
+This conversion enables XDP programs---which run in a different address space from the monitored process---to access the metrics, and it also allows {\sysname} to operate correctly even when KPTI is enabled as part of Meltdown mitigations.
+Furthermore, \texttt{XMON\_IOC\_SET\_ELEM} pins the pages of the registered memory region so that they are never swapped out (See Sec.~\ref{subsec:non-blocking}).
+This prevents page faults and blocking caused by swap-in during monitoring.
+% The third ioctl, \texttt{XMON\_IOC\_REGISTER\_PORT}, takes a port number as its argument and updates the global \texttt{port\_tab} array so that the entry for that port points to the metrics descriptor array created earlier.
+The third ioctl, \texttt{XMON\_IOC\_REGISTER\_PORT}, takes a port number as its argument and updates the global \texttt{port\_tab} array so that \texttt{port\_tab[port]} points to the metrics descriptor array created earlier.
+With these preparations, the helper function for retrieving user metrics can access the target metrics in O(1) time by simply receiving the port number of the monitored microservice as an argument.
+
+
+% {\sysname}'s helper function retrieves user metrics and copies them into a network packet.
+% To allow an XDP program to select specific user metrics, it requires an array of metric descriptors as arguments.
+% The user metrics stored in the specified descriptors are copied into the packet, while the metrics not specified are omitted.
+% This helper function operates in a lock-free manner because it performs read-only operations on the user metrics and the descriptor array (see Sec.~\ref{subsec:non-blocking}).
+% Importantly, this design remains effective even if kernel space is separated from user space as a mitigation against Meltdown, since user metrics are accessed through their physical addresses.
 
 One important consideration is that if a user metric registered in the metrics descriptor array exceeds 4 KB in size, it may span multiple physical memory pages.
 In such cases, the helper might unintentionally read data from a different, unrelated kernel memory page.
 To prevent this issue, the user metrics should be split into smaller components before being registered in the metrics descriptor array.
 
-% Among the fields in these structs, only a subset is actually exposed to clients.  
-% For instance, the \texttt{stats} command of Memcached (see Sec.~\ref{subsec:traditional-monitoring}) returns only 4 out of 70 fields in the \texttt{struct settings.
+\textbf{Lifecycle of Monitored Microservice. }
+The monitored microservice registers its metrics only once when it starts up.  
+This registration completes within approximately 50 $\mu$s.  
+During execution, the microservice continues running without being interrupted for monitoring (except for unavoidable Hard IRQs).  
+In contrast, traditional monitoring requires invoking monitoring APIs during execution---such as \texttt{stats} in Memcached or \texttt{INFO} in Redis---which interferes with the microservice’s normal operation.
 
-% To enable selective access to user metrics from XDP programs, we perform two preparatory steps.
-% First, the fields required for monitoring are relocated to the beginning of the corresponding struct. 
-% This allows the XDP program to efficiently copy only the relevant fields.  
-% The selection of required metrics is aligned with those exposed by existing monitoring interfaces, such as Memcached's \texttt{stats} command and Redis's \texttt{INFO} command, to obtain the metrics provided by traditional user-space monitoring tools.
-% Second, the microservice registers metadata about each metric struct in the kernel prior to monitoring.  
-% This is done using a custom system call, \texttt{register\_metrics()}, which stores the metadata in a global \texttt{metrics array} (Fig.~\ref{fig:metrics-registration}).  
-% This array is shared across all microservices in the system and contains the following fields for each entry:
-
-% \begin{enumerate}
-%   \item \textbf{\texttt{port\_number}}: Identifies the microservice.
-%   \item \textbf{\texttt{id\_struct}}: Differentiates between multiple metric structs used by the same microservice.  
-%         For example, Memcached has seven distinct structs, each with a unique ID.
-%   \item \textbf{\texttt{size\_struct}}: The total size of the front portion of the struct that contains only the required metric fields.
-%   \item \textbf{\texttt{PA\_struct}}: The physical address of the beginning of the struct.
-% \end{enumerate}
-% Since the physical page storing the metrics does not change during execution (see Sec.~\ref{subsec:non-blocking}), registration only needs to be performed once before monitoring begins.
-
-% The helper function used by the XDP program is designed to access user metrics in a general and microservice-agnostic manner by relying solely on the information stored in the \texttt{metrics array}.  
-% It takes \texttt{port\_number} and \texttt{id\_struct} as arguments, searches the \texttt{metrics array} for the matching entry, retrieves \texttt{size\_struct} and \texttt{PA\_struct}, and converts the physical address to a virtual address using the \texttt{\_\_va} macro.  
-% It then copies the memory region from the starting address up to \texttt{size\_struct} bytes into the eBPF stack (Fig.~\ref{fig:memory-share}).
+When the microservice terminates, {\sysname} safely releases all resources.  
+When the file descriptor returned by open(/dev/xmon) is closed at process exit, the kernel invokes \texttt{xmon\_release}.  
+\texttt{xmon\_release} clears the corresponding entry in \texttt{port\_tab} by setting it to NULL, and then frees the associated metrics descriptor array.  
+This prevents use-after-free bugs and ensures safe cleanup.  
+The same cleanup procedure is triggered even when the microservice crashes or is restarted: closing the file descriptor automatically calls \texttt{xmon\_release} and releases the metrics descriptors in the same way.  
+If the process crashes, the corresponding \texttt{port\_tab} entry becomes NULL, causing no metrics to be returned, which immediately alerts the system administrator to the anomaly.
 
 \subsection{Non-Blocking Monitoring}
 \label{subsec:non-blocking}
@@ -214,6 +202,7 @@ However, user metrics may be subject to swap-out if no specific configuration is
 % To prevent blocking due to swapping, microservices are configured to pin the relevant memory using the \texttt{mlock} system call prior to monitoring.
 To prevent blocking due to swapping, {\sysname} pins the relevant memory using the \texttt{mlock} system call before monitoring begins.
 This ensures that user metric collection can also be performed safely without incurring any blocking behavior.
+
 
 \subsection{Handling Large Size Packet}
 \label{subsec:large-packet}
@@ -268,6 +257,7 @@ By leveraging XDP multi-buffer, monitoring systems can handle larger packets wit
 
 % To address this limitation while preserving memory safety guarantees, we increased the value of \texttt{MAX\_BPF\_STACK} in the Linux kernel, thereby enabling our monitoring system to allocate a larger BPF stack size sufficient to store the necessary metrics.
 
+\subsection{Modification for Monitored Microservice. }
 
 \subsection{Applying Memcached}
 \label{subsec:case-study}

@@ -64,8 +64,7 @@
 Cloud-native services have evolved from monolithic architectures to microservices, comprising hundreds to thousands of containerized components.  
 These microservices are launched frequently and collaborate closely, and each must meet strict requirements for responsiveness and availability.
 To satisfy service-level agreements (SLAs), monitoring plays a critical role in microservices. 
-To enable an orchestration system to manage each microservice effectively, monitoring services must operate with both low latency and low overhead, allowing them to capture timely service status without compromising service performance.
-However, conventional user-space monitoring tools such as Netdata and Prometheus incur scheduling delays and context switch overhead, resulting in increased monitoring latency and degraded service performance.
+To enable an orchestration system to manage each microservice effectively, monitoring services must operate with both low latency and low overhead, allowing them to capture timely service status without compromising service performanceHowever, conventional user-space monitoring tools such as Netdata and Prometheus incur scheduling delays and context switch overhead, resulting in increased monitoring latency and degraded service performance.
 
 We present X-Monitor, a lightweight monitoring framework based on eXpress Data Path (XDP).  
 X-Monitor has three key features:  
