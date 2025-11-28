@@ -1,58 +1,161 @@
 \section{Evaluation}
-\label{sec:evaluation}
+% \label{sec:evaluation}
 
-% \begin{figure*}[!p]
-%   \centering
-%   \subfloat[1 instance (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance1-kernel.png}\label{fig:instance1-kernel}}\hfill
-%   \subfloat[5 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance5-kernel.png}\label{fig:instance5-kernel}}\hfill
-%   \subfloat[10 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-kernel.png}\label{fig:instance10-kernel}}\\[10pt]
-%   % \subfloat[10 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-kernel.png}\label{fig:instance10-kernel}}\\
-%   \subfloat[interval 1000 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval1000-kernel.png}\label{fig:interval1000-kernel}}\hfill
-%   \subfloat[interval 100 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval100-kernel.png}\label{fig:interval100-kernel}}\hfill
-%   \subfloat[interval 10 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval10-kernel.png}\label{fig:interval10-kernel}}
-%   \caption{Monitoring latency of \textbf{kernel} metrics under varying numbers of Memcached instances and sampling intervals}
-%   \label{fig:monitor-latency-kernel}
+% \begin{figure*}[t]  % Use figure* for spanning across both columns
+%     \centering
+%     % First image (a)
+%     \begin{minipage}[b]{0.33\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf/instance1-kernel.png}
+%         \subcaption{1 instance}
+%         \label{fig:instance1-kernel}
+%     \end{minipage}
+%     % \hfill
+%     % Second image (b)
+%     \begin{minipage}[b]{0.33\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf/instance5-kernel.png}
+%         \subcaption{5 instances}
+%         \label{fig:instance5-kernel}
+%     \end{minipage}
+%     % \hfill
+%     % Third image (c)
+%     \begin{minipage}[b]{0.33\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf/instance10-kernel.png}
+%         \subcaption{10 instances}
+%         \label{fig:instance10-kernel}
+%     \end{minipage}
+    
+%     % \hfill
+%     \begin{minipage}[b]{0.33\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf/interval1000-kernel.png}
+%         \subcaption{interval 1000 ms}
+%         \label{fig:interval1000-kernel}
+%     \end{minipage}
+%     % \hfill
+%     % Second image (b)
+%     \begin{minipage}[b]{0.33\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf/interval100-kernel.png}
+%         \subcaption{interval 100 ms}
+%         \label{fig:interval100-kernel}
+%     \end{minipage}
+%     % \hfill
+%     % Third image (c)
+%     \begin{minipage}[b]{0.33\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf/interval10-kernel.png}
+%         \subcaption{interval 10 ms} 
+%         \label{fig:interval10-kernel}
+%     \end{minipage}
+%     % Overall caption
+%     \caption{Monitoring latency of kernel metrics under varying numbers of Memcached instances and sampling intervals}
+%     \label{fig:monitor-latency-kernel}
 % \end{figure*}
 
-% \begin{figure*}[!p]
-%   \centering
-%   \subfloat[1 instance (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance1-user.png}\label{fig:instance1-user}}\hfill
-%   \subfloat[5 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance5-user.png}\label{fig:instance5-user}}\hfill
-%   \subfloat[10 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-user.png}\label{fig:instance10-user}}\\[10pt]
-%   % \subfloat[10 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-user.png}\label{fig:instance10-user}}\\
-%   \subfloat[interval 1000 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval1000-user.png}\label{fig:interval1000-user}}\hfill
-%   \subfloat[interval 100 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval100-user.png}\label{fig:interval100-user}}\hfill
-%   \subfloat[interval 10 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval10-user.png}\label{fig:interval10-user}}
-%   \caption{Monitoring latency of \textbf{user} metrics under varying numbers of Memcached instances and sampling intervals}
-%   \label{fig:monitor-latency-user}
+
+
+% \begin{figure*}[t]  % Use figure* for spanning across both columns
+%     \centering
+%     % First image (a)
+%     \begin{minipage}[b]{0.33\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf/instance1-user.png}
+%         \subcaption{1 instance}
+%         \label{fig:instance1-user}
+%     \end{minipage}
+%     % Second image (b)
+%     \begin{minipage}[b]{0.33\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf/instance5-user.png}
+%         \subcaption{5 instances}
+%         \label{fig:instance5-user}
+%     \end{minipage}
+%     % Third image (c)
+%     \begin{minipage}[b]{0.33\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf/instance10-user.png}
+%         \subcaption{10 instances}
+%         \label{fig:instance10-user}
+%     \end{minipage}
+    
+%     \begin{minipage}[b]{0.33\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf/interval1000-user.png}
+%         \subcaption{interval 1000 ms}
+%         \label{fig:interval1000-user}
+%     \end{minipage}
+%     % Second image (b)
+%     \begin{minipage}[b]{0.33\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf/interval100-user.png}
+%         \subcaption{interval 100 ms}
+%         \label{fig:interval100-user}
+%     \end{minipage}
+%     % Third image (c)
+%     \begin{minipage}[b]{0.33\textwidth}  % Adjust width as needed
+%         \centering
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf/interval10-user.png}
+%         \subcaption{interval 10 ms} 
+%         \label{fig:interval10-user}
+%     \end{minipage}
+%     % Overall caption
+%     \caption{Monitoring latency of user metrics under varying numbers of Memcached instances and sampling intervals}
+%     \label{fig:monitor-latency-user}
 % \end{figure*}
 
-\begin{figure*}[!p]
-  \centering
-  \subfloat[1 instance (kernel)]{\includegraphics[width=0.33\textwidth]{graph/Latency/cdf-kernelmetrics-1mcd.png}\label{fig:cdf-kernel-1mcd}}\hfill
-  \subfloat[5 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/Latency/cdf-kernelmetrics-5mcd.png}\label{fig:cdf-kernel-5mcd}}\hfill
-  \subfloat[10 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/Latency/cdf-kernelmetrics-10mcd.png}\label{fig:cdf-kernel-10mcd}}\\[10pt]
-  % \subfloat[10 instances (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-kernel.png}\label{fig:instance10-kernel}}\\
-  % \subfloat[interval 1000 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval1000-kernel.png}\label{fig:interval1000-kernel}}\hfill
-  % \subfloat[interval 100 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval100-kernel.png}\label{fig:interval100-kernel}}\hfill
-  % \subfloat[interval 10 ms (kernel)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval10-kernel.png}\label{fig:interval10-kernel}}
-  \caption{Monitoring latency of \textbf{kernel} metrics under varying numbers of Memcached instances and sampling intervals}
-  \label{fig:monitor-latency-kernel}
+
+
+
+
+% \begin{figure*}[t]
+%   \centering
+%   % --- 左 ---
+%   \begin{minipage}{0.48\linewidth}
+%     \centering
+%     \includegraphics[width=\linewidth]{graph/APP_Throughput/throughput_user.pdf}
+%     \caption{Memcached throughput while monitoring kernel metrics.}
+%     \label{fig:throughput_user}
+%   \end{minipage}
+%   \hfill
+%   % --- 右 ---
+%   \begin{minipage}{0.48\linewidth}
+%     \centering
+%     \includegraphics[width=\linewidth]{graph/APP_Throughput/throughput_kernel.pdf}
+%     \caption{Memcached throughput while monitoring user metrics.}
+%     \label{fig:throughput_kernel}
+%   \end{minipage}
+% \end{figure*}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.93\linewidth]{graph/APP_Throughput/throughput_user.pdf}
+    \caption{Memcached throughput while monitoring user metrics.}
+    \label{fig:throughput_user}
 \end{figure*}
 
-\begin{figure*}[!p]
-  \centering
-  \subfloat[1 instance (user)]{\includegraphics[width=0.33\textwidth]{graph/Latency/cdf-usermetrics-1mcd.png}\label{fig:cdf-user-1mcd}}\hfill
-  \subfloat[5 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/Latency/cdf-kernelmetrics-5mcd.png}\label{fig:cdf-user-5mcd}}\hfill
-  \subfloat[10 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/Latency/cdf-usermetrics-10mcd.png}\label{fig:cdf-user-10mcd}}\\[10pt]
-  % \subfloat[10 instances (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/instance10-user.png}\label{fig:instance10-user}}\\
-  % \subfloat[interval 1000 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval1000-user.png}\label{fig:interval1000-user}}\hfill
-  % \subfloat[interval 100 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval100-user.png}\label{fig:interval100-user}}\hfill
-  % \subfloat[interval 10 ms (user)]{\includegraphics[width=0.33\textwidth]{graph/cdf/interval10-user.png}\label{fig:interval10-user}}
-  \caption{Monitoring latency of \textbf{user} metrics under varying numbers of Memcached instances and sampling intervals}
-  \label{fig:monitor-latency-user}
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.93\linewidth]{graph/APP_Throughput/throughput_kernel.pdf}
+    \caption{Memcached throughput while monitoring kernel metrics.}
+    \label{fig:throughput_user}
 \end{figure*}
 
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.93\linewidth]{graph/APP_Latency/latency99_user.pdf}
+    \caption{Memcached 99th latency while monitoring user metrics.}
+    \label{fig:throughput_user}
+\end{figure*}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.93\linewidth]{graph/APP_Latency/latency99_kernel.pdf}
+    \caption{Memcached 99th latency while monitoring kernel metrics.}
+    \label{fig:throughput_user}
+\end{figure*}
 
 To evaluate {\sysname}, we conducted some experiments.
 Sec.~\ref{subsec:evaluation-setup} describes the experimental setup.
@@ -63,6 +166,35 @@ Finally, in Sec.~\ref{subsec:priority}, we investigate the monitoring latency an
 \subsection{Evaluation Setup}
 \label{subsec:evaluation-setup}
 
+% \begin{table}[ht]
+% \centering
+% % \small 
+% \scriptsize
+% \caption{Monitoring Server Configuration}
+% \begin{tabular}{|l|l|}
+% \hline
+% OS     & Ubuntu 24.04 (Linux kernel v6.8)                  \\ \hline
+% CPU    & Intel(R) Xeon(R) Gold 5418Y (48 cores)\\ \hline
+% NIC    & Intel Corporation Ethernet Controller X710 for 10GbE SFP+ \\ \hline
+% DRAM    & 256 GB  \\ \hline     
+% \end{tabular}
+% \label{tab:system-config-server}
+% \end{table}
+
+% \begin{table}[ht]
+% \centering
+% % \small 
+% \scriptsize
+% \caption{Monitoring Client Configuration}
+% \begin{tabular}{|l|l|}
+% \hline
+% OS     & Ubuntu 22.04 (Linux kernel v5.15)                  \\ \hline
+% CPU    & Intel(R) Xeon(R) E-2276G @ 3.80GHz (6 cores) \\ \hline
+% NIC    & Intel Corporation Ethernet Controller X710 for 10GbE SFP+ \\ \hline
+% DRAM    & 32 GB  \\ \hline     
+% \end{tabular}
+% \label{tab:system-config-client}
+% \end{table}
 
 \begin{table}[t]
 \centering
@@ -275,6 +407,65 @@ These results confirm that {\sysname} provides low-latency monitoring for user m
 In all cases, similar to kernel metric monitoring, the monitoring latency remains shorter than the sampling interval, indicating that the monitoring process can be completed within each interval.
 
 
+% Tab.~\ref{tab:latency-table} presents various latency statistics for the case where the number of Memcached instances is fixed at 10 and the sampling interval is varied.
+% The mean latency remains nearly constant regardless of the sampling interval for both {\sysname} and Netdata, while {\sysname} consistently achieves a latency that is approximately 1/20 that of Netdata.
+% The 99th percentile latency of {\sysname} does not show growth as the interval decreases from 1000ms to 10ms (from 64.4~$\mu$s to 54.3~$\mu$s, a 15\% decrease). In contrast, Netdata’s 99th percentile latency increases by 258.2\% (from 1611~$\mu$s to 5776~$\mu$s).
+% The minimum latency remains stable across sampling intervals for both systems. Nevertheless, {\sysname}’s minimum latency is an order of magnitude smaller than that of Netdata.
+% For the maximum latency, {\sysname} shows no increase with shorter intervals, whereas Netdata experiences a 482.3\% increase (from 1641~$\mu$s to 9554~$\mu$s).
+% Regarding standard deviation, Netdata’s latency variance is two orders of magnitude larger than that of {\sysname}, regardless of the sampling interval.
+% These results indicate that {\sysname} is less affected by sampling interval changes and maintains consistently low and stable latency across all sampling intervals, unlike Netdata.
+
+
+% Fig.~\ref{fig:instance1-kernel}, Fig.~\ref{fig:instance5-kernel}, and Fig.~\ref{fig:instance10-kernel} illustrate the monitoring latency of {\sysname} and Netdata with varying sampling intervals under fixed numbers of Memcached instances.
+% Fig.~\ref{fig:instance1-kernel} shows the case where the number of instances is fixed at one. Across all sampling intervals (1000~ms, 100~ms, and 10~ms), {\sysname} consistently achieves lower latency, with the 99th percentile latency being 81.64~$\mu$s, 74.0~$\mu$s, and 70.3~$\mu$s, respectively. In contrast, Netdata exhibits significantly higher latency, with 99th percentile values of 3.17~ms, 4.83~ms, and 5.41~ms for the same intervals.
+% Fig.~\ref{fig:instance5-kernel} presents the results for five instances. Again, {\sysname} maintains low latency across all intervals. While Netdata does not show a sharp increase in tail latency at 1000~ms (99th percentile: 1.63~ms), the tail latency becomes substantially larger at 100~ms and 10~ms (99th percentile: 5.01~ms and 4.96~ms, respectively).
+% Similar trends are observed in Fig.~\ref{fig:instance10-kernel}, where the number of instances is fixed at ten. {\sysname} keeps the latency low for all sampling intervals (75.2~$\mu$s, 71.3~$\mu$s, and 70.1~$\mu$s), while Netdata again suffers from increased tail latency, particularly at 100~ms and 10~ms intervals (99th percentile: 5.18~ms and 5.77~ms, respectively).
+% These results indicate that {\sysname} enables consistently low-latency monitoring for Memcached servers with varying numbers of instances, reducing tail latency by approximately two orders of magnitude compared to Netdata.
+
+% Fig.~\ref{fig:interval1000-kernel}, Fig.~\ref{fig:interval100-kernel}, and Fig.~\ref{fig:interval10-kernel} show the monitoring latency of kernel metrics when the sampling interval is fixed and the number of Memcached instances is varied.
+% In Fig.~\ref{fig:interval1000-kernel}, with the sampling interval fixed at 1000~ms, {\sysname} shows consistently low latency across all instance counts (<= 81.1~$\mu$s). Netdata, on the other hand, exhibits a sharp increase in tail latency when the number of instances is one. Although the increase is less pronounced for five and ten instances, Netdata's latency remains higher than that of {\sysname}.
+% Fig.~\ref{fig:interval100-kernel} shows results with a 100~ms interval. {\sysname} again maintains low latency across all instance counts (<= 74.0~$\mu$s), while Netdata shows significantly higher latency and larger tail values.
+% In Fig.~\ref{fig:interval10-kernel}, the sampling interval is fixed at 10~ms. {\sysname} continues to provide low monitoring latency (<= 71.2~$\mu$s) regardless of the number of instances, whereas Netdata suffers from high tail latency.
+% These results confirm that {\sysname} achieves low-latency monitoring across various sampling intervals, significantly reducing tail latency by up to two orders of magnitude compared to Netdata.
+
+% \textbf{Latency vs Instances. }
+% As Fig.~\ref{fig:kernel_latency_a} and ~\ref{fig:user_latency_a} show, Netdata exhibits high monitoring latency regardless of the number of Memcached instances.
+% The experiment is conducted with a sampling interval fixed to 10 ms.
+% For kernel monitoring, the monitoring latency remains consistently high regardless of the number of Memcached instances, with values of 7.64 ms, 7.12 ms, and 7.62 ms observed for 1, 5, and 10 instances, respectively.
+% Similarly, for user metrics monitoring, the latency remains high at 7.04 ms, 7.43 ms, and 6.74 ms.
+% Under high-load conditions, CPU contention becomes a critical factor, causing delays in scheduling Netdata processes.
+
+% In contrast, {\sysname} demonstrates remarkable stability in latency, even as the number of instances increases.
+% The latency of kernel monitoring remains low and stable, measuring 72.42 µs with 1 instance, 75.93 µs with 5 instances, and 74.34 µs with 10 instances.
+% Similarly, for user monitoring, the latency stays low at 49.53 µs, 53.20 µs, and 56.04 µs.
+% This stability can be attributed to {\sysname}'s architecture, which ensures that it is not subject to traditional process scheduling.
+% Instead, it is executed immediately after a hardware interrupt, minimizing delays.
+
+% \textbf{Latency vs Interval. }
+% As Fig.~\ref{fig:kernel_latency_b} and Fig~\ref{fig:user_latency_b} show, Netdata's monitoring latency increases as the sampling interval becomes shorter.
+% The experiment is conducted with the number of Memcached instances fixed at 10.
+% As the interval shortens from 1000 ms to 100 ms and then to 10 ms, Netdata's latency of kernel monitoring increases to 1.593 ms, 7.196 ms, and 7.624 ms, respectively.
+% Netdata's latency of user monitoring also rises from 2.128 ms, 5.376 ms, and 6.748 ms.
+% The relationship between the interval and the latency can be interpreted as follows.
+% As the interval shortens, the frequency of heavy TCP/IP processing and user/kernel context switches required for monitoring also increases.
+% This additional load from the monitoring itself leads to resource contention, making it more prone to delays.
+% Furthermore, shorter intervals heighten the likelihood of blocking states during TCP/IP processing due to contention for locks.
+
+% In contrast, {\sysname} does not exhibit an increase in latency as the interval shortens.
+% When the interval decreases from 1000 ms to 100 ms and then to 10 ms, the latency remains consistent, transitioning from 77.52 µs to 74.08 µs and 74.34 µs in kernel monitoring and from 64.60 µs to 68.76 µs and 56.04 µs in user monitoring.
+% {\sysname} bypasses the heavy processing associated with TCP/IP and user/kernel context switching and relies solely on lightweight operations, such as XDP program and \texttt{procfs} access, which impose minimal load on the system, leading to stable latency.
+% {\sysname} also ensures that packets rarely overlap during processing.
+% Even with 10 ms intervals, it achieves a latency of approximately 0.07 ms per monitoring operation, allowing the next packet to arrive only after the current one has been fully processed.
+% Consequently, {\sysname} avoids simultaneous handling of multiple packets, maintaining consistently low latency in its operations.
+
+% \textbf{CDF of monitoring latency. }
+% Fig.~\ref{fig:kernel_cdf} and Fig.~\ref{fig:user_cdf} show the CDF of monitoring latency for kernel metrics and user metrics, measured with 10 Memcached instances and a sampling interval of 10 ms.
+% In both cases, Netdata's tail latency remains stable up to approximately the $98^{\mathrm{th}}$ percentile but then rises sharply.
+% The $99^{\mathrm{th}}$ percentile latency reaches 2.458 ms for kernel monitoring and 2.545 ms for user monitoring, respectively.
+% On the other hand, {\sysname}'s tail latency remains low and stable.
+% The $99^{\mathrm{th}}$ percentile latency of kernel monitoring and user monitoring is 70.16 µs and 54.33 µs respectively.
+% {\sysname} reduces the $99^{\mathrm{th}}$ percentile latency by four to two orders of magnitude compared to Netdata.
+
 \subsection{Monitoring Interference}
 \label{subsec:monitoring-overhead}
 
@@ -282,7 +473,7 @@ We evaluate the monitoring overhead based on two factors: the CPU utilization re
 
 \begin{table}[ht]
 \centering
-% \small 
+\small 
 \caption{CPU Utilization vs Memcached instances (Monitoring Memcached Metrics, Interval is 10 ms)}
 \begin{tabular}{|l|l|l|l|}
 \hline
@@ -296,7 +487,7 @@ We evaluate the monitoring overhead based on two factors: the CPU utilization re
 
 \begin{table}[ht]
 \centering
-% \small 
+\small 
 \caption{CPU Utilization vs Memcached interval (Monitoring Memcached Metrics, 10 instances)}
 \begin{tabular}{|l|l|l|l|}
 \hline
@@ -309,28 +500,6 @@ We evaluate the monitoring overhead based on two factors: the CPU utilization re
 \end{table}
 
 
-% \begin{figure}[t]  % Use figure* for spanning across both columns
-%     \centering
-%     % First image (a)
-%     \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as needed
-%         \centering
-%         \includegraphics[width=\textwidth]{graph/cpu-util-instance.png}
-%         \subcaption{CPU utilization vs Instances}
-%         \label{fig:cpu-util-instance}
-%     \end{minipage}
-%     \hfill
-%     % Second image (b)
-%     \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as needed
-%         \centering
-%         \includegraphics[width=\textwidth]{graph/cpu-util-interval.png}
-%         \subcaption{CPU utilization vs Interval}
-%         \label{fig:cpu-util-interval}
-%     \end{minipage}
-%     \hfill
-%     % Overall caption
-%     \caption{Monitoring CPU utilization.}
-%     \label{fig:cpu-util}
-% \end{figure}
 
 \textbf{CPU Utilization.}
 We measure the CPU utilization of the monitoring server while it handles requests for Memcached metrics sent from the monitoring client.
@@ -366,7 +535,7 @@ Therefore, regardless of the sampling interval configured for Netdata, the plugi
 %     % First image (a)
 %     \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as need≤≤≤ed
 %         \centering
-%         \includegraphics[width=\textwidth]{graph/Memcached-throughput-k-met.png}
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/Memcached-throughput-k-met.png}
 %         \subcaption{Memcached throughput while monitoring kernel metrics}
 %         \label{fig:throughput-k-met}
 %     \end{minipage}
@@ -374,7 +543,7 @@ Therefore, regardless of the sampling interval configured for Netdata, the plugi
 %     % Second image (b)
 %     \begin{minipage}[b]{0.7\columnwidth}  % Adjust width as needed
 %         \centering
-%         \includegraphics[width=\textwidth]{graph/Memcached-throughput-u-met.png}
+%         \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/Memcached-throughput-u-met.png}
 %         \subcaption{Memcached throughput while monitoring user metrics}
 %         \label{fig:throughput-u-met}
 %     \end{minipage}
@@ -388,9 +557,9 @@ Therefore, regardless of the sampling interval configured for Netdata, the plugi
 %   \centering
 
 %   % First image (a)
-%   \begin{minipage}[t]{0.35\textwidth}
+%   \begin{minipage}[t]{0.36\textwidth}
 %     \centering
-%     \includegraphics[width=\textwidth]{graph/cdf-user-pri.png}
+%     \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/cdf-user-pri.png}
 %     \subcaption{CDF of User Monitoring Latency}
 %     \label{fig:cdf-u-met-pri}
 %   \end{minipage}
@@ -398,7 +567,7 @@ Therefore, regardless of the sampling interval configured for Netdata, the plugi
 %   % Second image (b)
 %   \begin{minipage}[t]{0.30\textwidth}
 %     \centering
-%     \includegraphics[width=\textwidth]{graph/elapsed-latency-nonpri.png}
+%     \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/elapsed-latency-nonpri.png}
 %     \subcaption{Monitoring Latency of Non-Prioritized Netdata}
 %     \label{fig:elapsed-latency-nonpri}
 %   \end{minipage}
@@ -406,7 +575,7 @@ Therefore, regardless of the sampling interval configured for Netdata, the plugi
 %   % Third image (c)
 %   \begin{minipage}[t]{0.30\textwidth}
 %     \centering
-%     \includegraphics[width=\textwidth]{graph/elapsed-latency-pri.png}
+%     \includegraphics[width=\textwidth]{SoCC-2025/figures/experiment/elapsed-latency-pri.png}
 %     \subcaption{Monitoring Latency of Prioritized Netdata}
 %     \label{fig:elapsed-latency-pri}
 %   \end{minipage}
@@ -418,7 +587,7 @@ Therefore, regardless of the sampling interval configured for Netdata, the plugi
 
 % \begin{figure}[t]
 %     \centering
-%     \includegraphics[width=0.8\columnwidth]{graph/Memcached-throughput-u-met-pri.png}
+%     \includegraphics[width=0.8\columnwidth]{SoCC-2025/figures/experiment/Memcached-throughput-u-met-pri.png}
 %     \caption{Memcached Throughput while Monitoring User Metrics}
 %     \label{fig:throughput-u-met-pri}
 % \end{figure}

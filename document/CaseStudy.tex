@@ -1,0 +1,32 @@
+\section{Case Study}
+\label{sec:case-study}
+In this section, we present a case study to illustrate how {\sysname} collects both user and kernel metrics.  
+We use Memcached metrics as a representative example of user metrics.  
+For kernel metrics, we focus on CPU-related statistics.
+
+\textbf{Monitoring Memcached Metrics }
+Memcached is a widely used in-memory database in cloud environments.  
+Due to its simplicity and high performance, as well as its support for distributed caching, it has been adopted in large-scale web services and microservice-based architectures.  
+In traditional monitoring approaches, a monitoring process sends the \texttt{stats} command to Memcached.  
+Upon receiving the request, Memcached invokes its internal metric collection functions—\texttt{server\_stats()} and \texttt{get\_stats()}—to selectively retrieve metrics from a set of predefined data structures.
+
+These structures include seven types: \texttt{stats}, \texttt{stats\_state}, \texttt{rusage}, \texttt{slab\_stats}, \texttt{settings}, \texttt{thread\_stats}, and \texttt{itemstats\_t}.  
+Although the combined size of these structures is approximately 7,440 bytes, the actual size of the metrics returned to the client is only about 656 bytes.  
+Therefore, Memcached selectively collects only the required metrics from each structure.
+
+This design introduces two drawbacks in traditional monitoring: (1) metric collection interferes with the execution of Memcached itself, and (2) additional overhead occurs due to frequent user–kernel context switches.
+
+In contrast, the proposed approach minimizes the involvement of Memcached during monitoring.  
+Memcached only registers metadata for the metrics prior to monitoring; it plays no active role during runtime metric collection.  
+Moreover, we rearrange the member variables of the metric-holding structures so that monitored metrics are placed at the beginning and unmonitored ones at the end.  
+This layout allows BPF programs to efficiently copy only the monitored portion—starting from the beginning of the structure—into the BPF stack, thereby collecting the necessary metrics with minimal overhead.
+
+\textbf{Monitoring CPU Metrics }
+For collecting CPU metrics, both conventional methods and {\sysname} retrieve metrics via \texttt{procfs}.
+In traditional approaches, a system call is issued to access \texttt{procfs}, resulting in user–kernel context switch overhead.
+In contrast, {\sysname} invokes \texttt{procfs} from within a BPF helper function, thereby eliminating the overhead of context switches.
+
+Specifically, the BPF helper calls \texttt{bpf\_get\_user\_cpu\_metrics()}, a function defined inside \texttt{procfs}.
+This function internally invokes a series of other functions, eventually calling the macro \texttt{RELOC\_HIDE} to access CPU metrics.
+Throughout this entire code path, no locks are acquired.
+As a result, {\sysname} ensures safe monitoring from within XDP, without introducing any blocking due to lock contention.
