@@ -49,6 +49,36 @@ This approach enables flexible and safe in-kernel monitoring within the constrai
 
 \subsubsection{Collecting Kernel Metrics}
 
+% \begin{table}[t]
+%   \centering
+%   % \small
+%   \scriptsize
+%   \caption{Kernel functions used to obtain metrics.}
+%   \begin{tabular}{@{}lll@{}}
+%     \toprule
+%     Category & \texttt{/proc} File & \texttt{procfs} Internal Functions \\ \midrule
+%     CPU      & \texttt{/proc/stat}         & \texttt{kcpustat\_cpu\_fetch()} \\
+%     Disk     & \texttt{/proc/diskstats}    & \texttt{part\_stat\_read\_all()} \\
+%     Memory   & \texttt{/proc/meminfo}      & 
+%     \begin{tabular}[t]{@{}l@{}}
+%       \texttt{si\_meminfo()} \\
+%       \texttt{si\_swapinfo()} \\
+%       \texttt{vm\_memory\_committed()} \\
+%       \texttt{global\_node\_page\_state()} \\
+%       \texttt{total\_swapcache\_pages()} \\
+%       \texttt{si\_mem\_available()} \\
+%       \texttt{global\_node\_page\_state\_pages()} \\
+%       \texttt{global\_zone\_page\_state()}
+%     \end{tabular} \\
+%     Network  & \texttt{/proc/net/snmp}     & 
+%     \begin{tabular}[t]{@{}l@{}}
+%       \texttt{snmp\_get\_cpu\_field\_batch()} \\
+%       \texttt{snmp\_get\_cpu\_field64\_batch()}
+%     \end{tabular} \\
+%     \bottomrule
+%   \end{tabular}
+%   \label{tab:procfs}
+
 \begin{table}[t]
   \centering
   % \small
@@ -57,7 +87,15 @@ This approach enables flexible and safe in-kernel monitoring within the constrai
   \begin{tabular}{@{}lll@{}}
     \toprule
     Category & \texttt{/proc} File & \texttt{procfs} Internal Functions \\ \midrule
-    CPU      & \texttt{/proc/stat}         & \texttt{kcpustat\_cpu\_fetch()} \\
+    CPU      & \texttt{/proc/stat}         & 
+    \begin{tabular}[t]{@{}l@{}}
+      \texttt{kcpustat\_cpu\_fetch()} \\
+      \texttt{get\_idle\_time()} \\
+      \texttt{get\_iowait\_time()} \\
+      \texttt{kstat\_cpu\_irqs\_sum()} \\
+      \texttt{arch\_irq\_stat\_cpu()} \\
+      \texttt{kstat\_softirqs\_cpu()}
+    \end{tabular} \\
     Disk     & \texttt{/proc/diskstats}    & \texttt{part\_stat\_read\_all()} \\
     Memory   & \texttt{/proc/meminfo}      & 
     \begin{tabular}[t]{@{}l@{}}
@@ -106,7 +144,7 @@ The absence of blocking behavior is discussed in Sec.~\ref {subsec:non-blocking}
     \includegraphics[width=1.0\columnwidth]{fig/user-metrics.pdf}
     % \caption{User Metrics Registration. Microservices register the metadata of metrics to metrics descriptor.}
     \caption{Overview of user-metric monitoring.
-        Before monitoring, each microservice registers the physical address and size of its metric structs in a per-process metrics descriptor array.
+        Before monitoring, each microservice registers the address and size of its metric structs in a per-process metrics descriptor array.
         During monitoring, the BPF helper function retrieves the metrics descriptor array by indexing \texttt{port\_tab} with the microservice's port number and accesses the corresponding metric structs using the metadata stored in the array.}
     \label{fig:user-metric-collection}
 \end{figure}
@@ -147,17 +185,22 @@ For example, Memcached stores its metrics in several structs, such as \texttt{st
 Following this design, {\sysname} registers metrics at the granularity of these metric structs rather than individual fields, which reduces the number of helper function invocations.
 
 When a monitored process starts, it opens \texttt{/dev/xmon}.
-At this point, no metric information has been registered yet, but the file descriptor returned by \texttt{open} is associated with a per-process context that will later hold the metrics descriptor array.
+% At this point, no metric information has been registered yet, but the file descriptor returned by \texttt{open} is associated with a per-process context that will later hold the metrics descriptor array.
+At this point, the file descriptor returned by \texttt{open} is associated with a per-process context that will later hold the metrics descriptor array.
 Metric information is registered via three custom ioctls invoked on this file descriptor.
 The first ioctl, \texttt{XMON\_IOC\_CREATE}, takes as an argument the number of metric structs and allocates a metrics descriptor array with that number of elements.
-The second ioctl, \texttt{XMON\_IOC\_SET\_ELEM}, is invoked once per metric struct.
-It receives the struct's starting address and size as arguments and stores them in the appropriate element of the metrics descriptor array.
+% The second ioctl, \texttt{XMON\_IOC\_SET\_ELEM}, is invoked once per metric struct.
+% It receives the struct's starting address and size as arguments and stores them in the appropriate element of the metrics descriptor array.
+The second ioctl, \texttt{XMON\_IOC\_SET\_ELEM}, receives the starting address and size of each metric struct as arguments and stores them in the corresponding entry of the metrics descriptor array.
+It is invoked once per metric struct.
 During this registration, the ioctl converts the virtual address to a physical address.
-This conversion enables XDP programs---which run in a different address space from the monitored process---to access the metrics, and it also allows {\sysname} to operate correctly even when KPTI is enabled as part of Meltdown mitigations.
-Furthermore, \texttt{XMON\_IOC\_SET\_ELEM} pins the pages of the registered memory region so that they are never swapped out (See Sec.~\ref{subsec:non-blocking}).
-This prevents page faults and blocking caused by swap-in during monitoring.
+This conversion enables XDP programs --- which run in a different address space from the monitored process --- to access the metrics, and it also allows {\sysname} to operate correctly even when KPTI is enabled as part of Meltdown mitigations.
+Furthermore, \texttt{XMON\_IOC\_SET\_ELEM} pins the pages of the registered memory region to prevent blocking caused by swap-in during monitoring (see Sec.~\ref{subsec:non-blocking}).
 % The third ioctl, \texttt{XMON\_IOC\_REGISTER\_PORT}, takes a port number as its argument and updates the global \texttt{port\_tab} array so that the entry for that port points to the metrics descriptor array created earlier.
-The third ioctl, \texttt{XMON\_IOC\_REGISTER\_PORT}, takes a port number as its argument and updates the global \texttt{port\_tab} array so that \texttt{port\_tab[port]} points to the metrics descriptor array created earlier.
+% The third ioctl, \texttt{XMON\_IOC\_REGISTER\_PORT}, takes a port number as its argument and updates the global \texttt{port\_tab} array so that \texttt{port\_tab[port]} points to the metrics descriptor array created earlier.
+The third ioctl, \texttt{XMON\_IOC\_REGISTER\_PORT}, takes a port number as its argument and updates the global \texttt{port\_tab} array --- an array that stores, for each microservice port number, a pointer to its corresponding metrics descriptor array --- so that \texttt{port\_tab[port]} points to the metrics descriptor array created earlier.
+In addition, \texttt{XMON\_IOC\_REGISTER\_PORT} verifies that the specified port number actually belongs to the process invoking the ioctl, and it performs the registration only if this association is confirmed. 
+This prevents a process from falsely registering an arbitrary port number.
 With these preparations, the helper function for retrieving user metrics can access the target metrics in O(1) time by simply receiving the port number of the monitored microservice as an argument.
 
 
@@ -172,6 +215,7 @@ In such cases, the helper might unintentionally read data from a different, unre
 To prevent this issue, the user metrics should be split into smaller components before being registered in the metrics descriptor array.
 
 \textbf{Lifecycle of Monitored Microservice. }
+The lifecycle of the monitored microservice consists of minimally intrusive allocation of monitoring resources at startup and their safe release when the service terminates.
 The monitored microservice registers its metrics only once when it starts up.  
 This registration completes within approximately 50 $\mu$s.  
 During execution, the microservice continues running without being interrupted for monitoring (except for unavoidable Hard IRQs).  
@@ -184,24 +228,66 @@ This prevents use-after-free bugs and ensures safe cleanup.
 The same cleanup procedure is triggered even when the microservice crashes or is restarted: closing the file descriptor automatically calls \texttt{xmon\_release} and releases the metrics descriptors in the same way.  
 If the process crashes, the corresponding \texttt{port\_tab} entry becomes NULL, causing no metrics to be returned, which immediately alerts the system administrator to the anomaly.
 
+
 \subsection{Non-Blocking Monitoring}
 \label{subsec:non-blocking}
 Since XDP programs execute in the SoftIRQ context, they must not cause any blocking.
 Blocking operations in such interrupt contexts can delay the handling of other interrupts or kernel tasks, potentially degrading overall system responsiveness.
 To ensure safe and efficient monitoring, it is therefore crucial that metric collection remains non-blocking—specifically, it must avoid lock acquisition and prevent access to memory regions that may have been swapped out.
-This design principle helps guarantee the safe execution of monitoring logic within the kernel.
+% This design principle helps guarantee the safe execution of monitoring logic within the kernel.
 
-In the context of kernel monitoring, to investigate whether any locking occurs in \texttt{procfs}, we analyzed the internal functions listed in Tab.~\ref{tab:procfs}, which are used to retrieve kernel metrics.
-Our investigation confirmed that no lock acquisition is performed during metric retrieval.
-In addition, it is known that kernel metrics are never swapped out ~\cite{zero}.
+% \textbf{Kernel Metrics. }
+% To determine whether any blocking occurs inside \texttt{procfs}, we analyzed the internal functions listed in Tab.~\ref{tab:procfs}, which are used to retrieve kernel metrics.
+
+% \emph{CPU metrics.}
+% Most of the kernel functions listed in Table~\ref{tab:kernel-func} internally invoke
+% \texttt{per\_cpu\_ptr()}, which simply performs address arithmetic on per-CPU memory regions and does not acquire any locks.
+% Even the remaining functions, such as \texttt{get\_iowait\_time()}, rely on \texttt{atomic\_read()}, which is also a lock-free operation.
+
+% \emph{Disk metrics. }
+% Disk statistics involve RCU read-side critical sections.
+% RCU read locks do not block and are safe within SoftIRQ.
+% Furthermore, functions such as \texttt{part\_stat\_read\_all()} use
+% \texttt{per\_cpu\_ptr()} to aggregate per-CPU counters, identical to those used
+% for CPU metrics, and therefore do not acquire blocking locks.
+
+% \emph{Memory metrics. }
+% Memory-related statistics show heterogeneous locking behavior.
+% Several commonly used helpers internally acquire spinlocks, including
+% \texttt{si\_meminfo()}, \texttt{si\_swapinfo()}, and \texttt{vm\_memory\_committed()}.
+% Because spinlock acquisition is incompatible with SoftIRQ execution,
+% {\sysname} does not collect memory metrics that rely on these functions.
+% In contrast, other memory-related functions mostly read counters using \texttt{atomic\_long\_read()}, which does not acquire spinlocks.
+% These metrics can therefore be accessed safely without blocking.
+
+% \emph{Network metrics. }
+% Network statistics collecting function iterate over per-CPU SNMP counters via \texttt{per\_cpu\_ptr()}.
+% As with CPU and disk metrics, these helpers do not acquire blocking locks and do not invoke sleepable operations.
+% Thus, network metrics can be obtained safely from the SoftIRQ context.
+
+\textbf{Kernel Metrics.}
+To determine whether any blocking occurs inside \texttt{procfs}, we analyzed the internal functions listed in Tab.~\ref{tab:procfs}, which are used to retrieve kernel metrics.
+With respect to CPU metrics, most of the functions internally invoke \texttt{per\_cpu\_ptr()}, which merely performs address arithmetic on per-CPU memory regions and does not acquire any locks.
+Even the exceptional functions, such as \texttt{get\_iowait\_time()}, use \texttt{atomic\_read()}, which is likewise lock-free.
+For disk metrics, the corresponding functions operate within RCU read-side critical sections; RCU read locks are non-blocking~\cite{rcu} and safe in SoftIRQ context.
+Moreover, kernel functions such as \texttt{part\_stat\_read\_all()} aggregate per-CPU counters via \texttt{per\_cpu\_ptr()}, identical to CPU metric retrieval, and therefore do not acquire blocking locks.
+Memory metrics exhibit more heterogeneous behavior: several widely used functions, including \texttt{si\_meminfo()}, \texttt{si\_swapinfo()}, and \texttt{vm\_memory\_committed()}, internally acquire spinlocks, which makes them incompatible with SoftIRQ execution.
+Accordingly, {\sysname} avoids collecting memory metrics that depend on these functions.
+Other memory-related functions simply read counters through \texttt{atomic\_long\_read()}, which does not acquire spinlocks and is therefore safe within SoftIRQ.
+Finally, network metrics are obtained by iterating over per-CPU SNMP counters using \texttt{per\_cpu\_ptr()}, which, as in the CPU and disk cases, acquires blocking locks.
+
+% In addition, it is known that kernel metrics are never swapped out ~\cite{zero}.
+% Therefore, metric collection via \texttt{procfs} can be performed without blocking, ensuring safe monitoring within the kernel.
+With respect to whether kernel metrics may be swapped out, prior work shows that these kernel-resident data structures are never paged out~\cite{zero}.
 Therefore, metric collection via \texttt{procfs} can be performed without blocking, ensuring safe monitoring within the kernel.
 
+
+\textbf{User Metrics. }
 % For user metrics, the systyem is designed to avoid acquiring locks during both metadata access and metric reading.
 For user metrics, {\sysname} does not acquire locks during metadata access or metric reading because both operations are read-only and do not require synchronization.
 However, user metrics may be subject to swap-out if no specific configuration is applied.
 % To prevent blocking due to swapping, microservices are configured to pin the relevant memory using the \texttt{mlock} system call prior to monitoring.
 To prevent blocking due to swapping, {\sysname} pins the relevant memory using the \texttt{mlock} system call before monitoring begins.
-This ensures that user metric collection can also be performed safely without incurring any blocking behavior.
 
 
 \subsection{Handling Large Size Packet}
@@ -211,8 +297,6 @@ This ensures that user metric collection can also be performed safely without in
 When using XDP for monitoring, one key limitation is the maximum packet size that XDP can handle.
 XDP is not originally designed to process large packets, and therefore imposes restrictions on the size of packets it can operate on.
 However, monitoring often involves collecting a large number of metrics from each microservice, which requires processing larger packets.
-
-% In particular, there are two main constraints: the maximum size of transmittable packets and the limited size of the BPF stack that can be used within the program.
 
 % \begin{figure}[htbp]
 %     \centering
@@ -234,32 +318,23 @@ eBPF verifier ensures memory safety by checking that all accesses fall within th
 As a result, it was not possible to access data beyond a single buffer.
 XDP multi-buffer addresses this limitation by allowing access to additional buffers through the \texttt{skb\_shared\_info} structure.
 This capability makes it possible to process sufficiently large packets required for monitoring purposes.
-By leveraging XDP multi-buffer, monitoring systems can handle larger packets without being constrained by traditional MTU limits, thereby expanding the scope of in-kernel packet processing.
 
-% The BPF stack has a limited size, which restricts the amount of local memory available to eBPF programs.
-% In Linux, the maximum BPF stack size is currently limited to 512 bytes, as defined by the macro \texttt{MAX\_BPF\_STACK}.
-% However, this size is often insufficient for practical monitoring use cases.
-% For instance, in the case of Memcached, existing monitoring tools collect metrics that require 656 bytes per instance—already exceeding the default stack limit.
-% Moreover, as the number of monitored microservices increases, the memory required to store their corresponding metrics grows proportionally, further stressing the BPF stack usage.
+\textbf{BPF Stack size extension. }
+The BPF stack has a limited size, which restricts the amount of local memory available to eBPF programs.
+In Linux, the maximum BPF stack size is currently limited to 512 bytes, as defined by the macro \texttt{MAX\_BPF\_STACK}.
+However, this size is often insufficient for practical monitoring use cases.
+For instance, in the case of Memcached, existing monitoring tools collect metrics that require 656 bytes per instance, which already exceeds the default stack limit.
+Moreover, as the number of monitored microservices increases, the memory required to store their corresponding metrics grows proportionally, further stressing the BPF stack usage.
 
-% To address this limitation, we increased the value of \texttt{MAX\_BPF\_STACK} in the Linux kernel, thereby enabling our monitoring system to allocate a larger BPF stack size sufficient to store the necessary metrics.
+eBPF does not provide general-purpose helper functions for dynamically allocating temporary local memory, as eBPF verifier must statically prove the memory safety of all accesses.
+Unlike the stack, which has a fixed size and a well-defined layout, dynamically allocated memory is difficult to verify due to uncertain lifetimes, pointer aliasing, and type ambiguity.
+Therefore, it is difficult to introduce custom helper functions that extend local memory, as their accesses cannot be precisely verified at verification time.
 
-% \textbf{BPF Stack size extension. }
-% The BPF stack has a limited size, which restricts the amount of local memory available to eBPF programs.
-% In Linux, the maximum BPF stack size is currently limited to 512 bytes, as defined by the macro \texttt{MAX\_BPF\_STACK}.
-% However, this size is often insufficient for practical monitoring use cases.
-% For instance, in the case of Memcached, existing monitoring tools collect metrics that require 656 bytes per instance, which already exceeds the default stack limit.
-% Moreover, as the number of monitored microservices increases, the memory required to store their corresponding metrics grows proportionally, further stressing the BPF stack usage.
+To address this limitation while preserving memory safety guarantees, we increased the value of \texttt{MAX\_BPF\_STACK} in the Linux kernel, thereby enabling our monitoring system to allocate a larger BPF stack size sufficient to store the necessary metrics.
 
-% eBPF does not provide general-purpose helper functions for dynamically allocating temporary local memory, as eBPF verifier must statically prove the memory safety of all accesses.
-% Unlike the stack, which has a fixed size and a well-defined layout, dynamically allocated memory is difficult to verify due to uncertain lifetimes, pointer aliasing, and type ambiguity.
-% Therefore, it is difficult to introduce custom helper functions that extend local memory, as their accesses cannot be precisely verified at verification time.
-
-% To address this limitation while preserving memory safety guarantees, we increased the value of \texttt{MAX\_BPF\_STACK} in the Linux kernel, thereby enabling our monitoring system to allocate a larger BPF stack size sufficient to store the necessary metrics.
 
 \subsection{Modification for Monitored Microservice. }
-
-\subsection{Applying Memcached}
+\textbf{Applying {\sysname} to Memcached. }
 \label{subsec:case-study}
 In this section, we present a case study to illustrate how {\sysname} collects both user and kernel metrics.  
 We use Memcached metrics as a representative example of user metrics.  
@@ -292,3 +367,5 @@ Specifically, BPF helper calls \texttt{part\_stat\_read\_all()}, a function defi
 This function internally invokes a series of other functions, eventually calling the macro \texttt{RELOC\_HIDE} to access CPU metrics.
 Throughout this entire code path, no locks are acquired.
 As a result, {\sysname} ensures safe monitoring from within XDP, without introducing any blocking due to lock contention.
+
+\textbf{Applying {\sysname} to Redis. }
